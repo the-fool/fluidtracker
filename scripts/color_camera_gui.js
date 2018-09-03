@@ -7,9 +7,12 @@ function initGUIControllers(tracker) {
     custom: false
   };
 
-  Object.keys(tracking.ColorTracker.knownColors_).forEach(function(color) {
+  console.log(tracking.ColorTracker.knownColors_);
+  trackedColors['magenta'] = true;
+  /*Object.keys(tracking.ColorTracker.knownColors_).forEach(function(color) {
     trackedColors[color] = true;
   });
+  */
 
   tracker.customColor = '#000000';
 
