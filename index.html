@@ -7,7 +7,7 @@
   <meta id="viewport" name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="stylesheet" href="style.css">
   <script>
-    window.trackEvent = {};
+    window.trackEvent = {prevX: 0, prevY: 0};
   </script>
   <script type="text/javascript" src="./GLFluid.js"></script>
   <script>
@@ -71,16 +71,13 @@
             rect.color = tracker.customColor;
           }
           */
-          window.trackEvent.x = windowX - rect.x / 600 * windowX;
-          window.trackEvent.y = rect.y / 450 * windowY;
-          /*
-          context.strokeStyle = rect.color;
-          context.strokeRect(rect.x, rect.y, rect.width, rect.height);
-          context.font = '11px Helvetica';
-          context.fillStyle = "#fff";
-          context.fillText('x: ' + rect.x + 'px', rect.x + rect.width + 5, rect.y + 11);
-          context.fillText('y: ' + rect.y + 'px', rect.x + rect.width + 5, rect.y + 22);
-          */
+          const x = windowX - (rect.x / 600 * windowX + rect.width / 2);
+          const y = rect.y / 450 * windowY + rect.height / 2;
+          window.trackEvent.prevX = window.trackEvent.x;
+          window.trackEvent.prevY = window.trackEvent.y;
+          window.trackEvent.x = x;
+          window.trackEvent.y = y;
+
         });
       });
 

@@ -1377,17 +1377,19 @@
                 this.mouseForceShader.isMouseDown.set(this.isMouseDown);
             }
             */
-            const tracked = Object.keys(window.trackEvent).length > 0;
+            const tracked = window.trackEvent.x !== undefined;
             this.updateDyeShader.isMouseDown.set(tracked);
-            this.mouseForceShader.isMouseDown.set(this.isMouseDown);
+            this.mouseForceShader.isMouseDown.set(tracked);
             if (tracked) {
-                this.mouse.setTo()
                 const x = window.trackEvent.x;
                 const y = window.trackEvent.y;
                 this.mouse.setTo(x, y);
                 this.mouseClipSpace.setTo(x / this.windows[0].width * 2 - 1, (this.windows[0].height - y) / this.windows[0].height * 2 - 1);
                 this.mousePointKnown = true;
+            } else {
+                this.mousePointKnown = false;
             }
+            
 
             this.fluid.step(dt);
             this.particles.stepParticlesShader.flowVelocityField.set_data(this.fluid.velocityRenderTarget.readFromTexture);
