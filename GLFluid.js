@@ -1380,15 +1380,14 @@
             const tracked = window.trackEvent.x !== undefined;
             this.updateDyeShader.isMouseDown.set(tracked);
             this.mouseForceShader.isMouseDown.set(tracked);
+            this.mousePointKnown = tracked;
+            for (let i = 0; i < 1; i++) {
             if (tracked) {
-                const x = window.trackEvent.x;
-                const y = window.trackEvent.y;
+                const x = window.trackEvent.x + 300 * i;
+                const y = window.trackEvent.y + 150 * i;
                 this.mouse.setTo(x, y);
                 this.mouseClipSpace.setTo(x / this.windows[0].width * 2 - 1, (this.windows[0].height - y) / this.windows[0].height * 2 - 1);
-                this.mousePointKnown = true;
-            } else {
-                this.mousePointKnown = false;
-            }
+            } 
             
 
             this.fluid.step(dt);
@@ -1426,6 +1425,7 @@
             this.lastMouse.setTo(this.mouse.x, this.mouse.y);
             this.lastMouseClipSpace.setTo(this.mouse.x / this.windows[0].width * 2 - 1, (this.windows[0].height - this.mouse.y) / this.windows[0].height * 2 - 1);
             this.lastMousePointKnown = this.mousePointKnown;
+            }
         },
         renderTexture: function (texture) {
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.textureQuad);
@@ -1541,15 +1541,15 @@
             return (this.windows[0].height - y) / this.windows[0].height * 2 - 1;
         },
         onMouseDown: function (x, y, button) {
-            this.isMouseDown = true;
+            // this.isMouseDown = true;
         },
         onMouseUp: function (x, y, button) {
-            this.isMouseDown = false;
+            // this.isMouseDown = false;
         },
         onMouseMove: function (x, y, button) {
-            this.mouse.setTo(x, y);
-            this.mouseClipSpace.setTo(x / this.windows[0].width * 2 - 1, (this.windows[0].height - y) / this.windows[0].height * 2 - 1);
-            this.mousePointKnown = true;
+            // this.mouse.setTo(x, y);
+            // this.mouseClipSpace.setTo(x / this.windows[0].width * 2 - 1, (this.windows[0].height - y) / this.windows[0].height * 2 - 1);
+            // this.mousePointKnown = true;
         },
         updateMouseCoord: function (x, y) {
             this.mouse.setTo(x, y);
