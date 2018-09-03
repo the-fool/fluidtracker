@@ -6,6 +6,9 @@
   <title>tracking.js - color with camera</title>
   <meta id="viewport" name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="stylesheet" href="style.css">
+  <script>
+    window.trackEvent = {};
+  </script>
   <script type="text/javascript" src="./GLFluid.js"></script>
   <script>
     window.addEventListener("touchmove", function (event) {
@@ -27,7 +30,7 @@
   <div id="content">
   </div>
 
-  
+
   <div class="demo-frame">
     <div class="demo-container">
       <video id="video" width="600" height="450" preload autoplay loop muted controls></video>
@@ -39,7 +42,15 @@
   </script>
 
   <script>
-    window.onload = function () {
+    let windowX = window.innerWidth;
+    let windowY = window.innerWidth;
+
+    window.addEventListener('resize', function () {
+      windowX = window.innerWidth;
+      windowY = window.innerWidth;
+    });
+
+    window.addEventListener('load', function () {
       var video = document.getElementById('video');
 
       var tracker = new tracking.ColorTracker();
@@ -49,12 +60,19 @@
       });
 
       tracker.on('track', function (event) {
-
+        if (event.data.length === 0) {
+          for (var key in window.trackEvent) {
+            delete window.trackEvent[key];
+          }
+        }
         event.data.forEach(function (rect) {
+          /*
           if (rect.color === 'custom') {
             rect.color = tracker.customColor;
           }
-          console.log(rect);
+          */
+          window.trackEvent.x = windowX - rect.x / 600 * windowX;
+          window.trackEvent.y = rect.y / 450 * windowY;
           /*
           context.strokeStyle = rect.color;
           context.strokeRect(rect.x, rect.y, rect.width, rect.height);
@@ -67,7 +85,7 @@
       });
 
       initGUIControllers(tracker);
-    };
+    });
   </script>
 
 </body>
