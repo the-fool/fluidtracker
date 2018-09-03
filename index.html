@@ -64,6 +64,7 @@
           for (var key in window.trackEvent) {
             delete window.trackEvent[key];
           }
+          return;
         }
         event.data.forEach(function (rect) {
           /*
