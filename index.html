@@ -67,9 +67,13 @@
             const y = d.y / 450 * windowY;
             e.x = x;
             e.y = y;
+            e.retries = 10;
           } else {
+            e.retries = e.retries ? e.retries-- : 0;
+            if (e.retries === 0) {
             for (var key in e) {
               delete e[key];
+            }
             }
           }
         })
