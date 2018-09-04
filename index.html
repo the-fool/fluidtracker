@@ -69,11 +69,12 @@
             e.y = y;
             e.retries = 10;
           } else {
-            e.retries = e.retries ? e.retries-- : 0;
-            if (e.retries === 0) {
-            for (var key in e) {
-              delete e[key];
+            if (e.retries !== undefined && e.retries > 0) {
+              e.retries--;
             }
+            if (e.retries === 0) {
+              delete e.x;
+              delete e.y;
             }
           }
         })
