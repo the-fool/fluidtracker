@@ -8568,6 +8568,48 @@
         },
         __class__: shaderblox.uniforms.UBool
     });
+
+    shaderblox.uniforms.UniformBase_Int = function (name, index, data) {
+        this.name = name;
+        this.location = index;
+        this.dirty = true;
+        this.data = data;
+        this.dirty = true;
+    };
+    $hxClasses["shaderblox.uniforms.UniformBase_Int"] = shaderblox.uniforms.UniformBase_Int;
+    shaderblox.uniforms.UniformBase_Int.__name__ = true;
+    shaderblox.uniforms.UniformBase_Int.prototype = {
+        set: function (data) {
+            this.dirty = true;
+            this.dirty = true;
+            return this.data = data;
+        },
+        setDirty: function () {
+            this.dirty = true;
+        },
+        set_data: function (data) {
+            this.dirty = true;
+            return this.data = data;
+        },
+        __class__: shaderblox.uniforms.UniformBase_Int
+    };
+    shaderblox.uniforms.UInt = function (name, index, f) {
+        if (f == null) f = 0;
+        shaderblox.uniforms.UniformBase_Int.call(this, name, index, f);
+    };
+    $hxClasses["shaderblox.uniforms.UInt"] = shaderblox.uniforms.UInt;
+    shaderblox.uniforms.UInt.__name__ = true;
+    shaderblox.uniforms.UInt.__interfaces__ = [shaderblox.uniforms.IAppliable];
+    shaderblox.uniforms.UInt.__super__ = shaderblox.uniforms.UniformBase_Int;
+    shaderblox.uniforms.UInt.prototype = $extend(shaderblox.uniforms.UniformBase_Int.prototype, {
+        apply: function () {
+            lime.graphics.opengl.GL.context.uniform1i(this.location, this.data);
+            this.dirty = false;
+        },
+        __class__: shaderblox.uniforms.UInt
+    });
+
+
     shaderblox.uniforms.UniformBase_Float = function (name, index, data) {
         this.name = name;
         this.location = index;
