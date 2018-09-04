@@ -1725,7 +1725,7 @@
             uniform bool isMouseDown2;
             uniform vec2 mouseClipSpace2;
             uniform vec2 lastMouseClipSpace2;
-            uniform float which;
+            uniform int which;
 
             void main(){
                 bool doit;
@@ -1737,11 +1737,11 @@
                 color.g *= (0.9494);
                 color.b *= (0.9696);
                 
-                if (which == 0.0) {
+                if (which == 0) {
                     doit = isMouseDown;
                     mouse = clipToSimSpace(mouseClipSpace);
                     lastMouse = clipToSimSpace(lastMouseClipSpace);
-                } else if (which == 1.0) {
+                } else if (which == 1) {
                     doit = isMouseDown2;
                     mouse = clipToSimSpace(mouseClipSpace2);
                     lastMouse = clipToSimSpace(lastMouseClipSpace2);
@@ -1787,7 +1787,7 @@
             var instance2 = Type.createInstance(Type.resolveClass("shaderblox.uniforms.UVec2"), ["lastMouseClipSpace2", -1]);
             this.lastMouseClipSpace2 = instance2;
             this.uniforms.push(instance2);
-            var instance2 = Type.createInstance(Type.resolveClass("shaderblox.uniforms.UFloat"), ["which", -1]);
+            var instance2 = Type.createInstance(Type.resolveClass("shaderblox.uniforms.UInt"), ["which", -1]);
             this.which = instance2;
             this.uniforms.push(instance2);
             this.aStride += 0;
@@ -1811,7 +1811,7 @@
             uniform bool isMouseDown2;
             uniform vec2 mouseClipSpace2;
             uniform vec2 lastMouseClipSpace2;
-            uniform float which;
+            uniform int which;
             
             void main(){
                 bool doit;
@@ -1821,12 +1821,12 @@
                 vec2 v = texture2D(velocity, texelCoord).xy;
                 v.xy *= 0.999;
 
-                if (which == 0.0) {
+                if (which == 0) {
                     doit = isMouseDown;
                     mouse = clipToSimSpace(mouseClipSpace);
                     lastMouse = clipToSimSpace(lastMouseClipSpace);
                     mouseVelocity = -(lastMouse - mouse)/dt;
-                } else if (which == 1.0) {
+                } else if (which == 1) {
                     doit = isMouseDown2;
                     mouse = clipToSimSpace(mouseClipSpace2);
                     lastMouse = clipToSimSpace(lastMouseClipSpace2);
@@ -1871,7 +1871,7 @@
             this.lastMouseClipSpace2 = instance2;
             this.uniforms.push(instance2);
 
-            var instance2 = Type.createInstance(Type.resolveClass("shaderblox.uniforms.UFloat"), ["which", -1]);
+            var instance2 = Type.createInstance(Type.resolveClass("shaderblox.uniforms.UInt"), ["which", -1]);
             this.which = instance2;
             this.uniforms.push(instance2);
 
