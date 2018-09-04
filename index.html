@@ -60,6 +60,7 @@
       });
 
       tracker.on('track', function (event) {
+        event.data.sort((a, b) => a.x - b.x);
         window.trackEvents.forEach((e, i) => {
           const d = event.data[i];
           if (d) {
@@ -67,12 +68,11 @@
             const y = d.y / 450 * windowY;
             e.x = x;
             e.y = y;
-            e.retries = 10;
+            e.retries = 100;
           } else {
             if (e.retries !== undefined && e.retries > 0) {
               e.retries--;
-            }
-            if (e.retries === 0) {
+            } else {
               delete e.x;
               delete e.y;
             }
