@@ -7,7 +7,7 @@
   <meta id="viewport" name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="stylesheet" href="style.css">
   <script>
-    window.trackEvent = {prevX: 0, prevY: 0};
+    window.trackEvents = [{}, {}];
   </script>
   <script type="text/javascript" src="./GLFluid.js"></script>
   <script>
@@ -60,25 +60,24 @@
       });
 
       tracker.on('track', function (event) {
-        if (event.data.length === 0) {
-          for (var key in window.trackEvent) {
-            delete window.trackEvent[key];
+        event.data.sort((a, b) => a.x - b.x);
+        window.trackEvents.forEach((e, i) => {
+          const d = event.data[i];
+          if (d) {
+            const x = windowX - (d.x / 600 * windowX);
+            const y = d.y / 450 * windowY;
+            e.x = x;
+            e.y = y;
+            e.retries = 100;
+          } else {
+            if (e.retries !== undefined && e.retries > 0) {
+              e.retries--;
+            } else {
+              delete e.x;
+              delete e.y;
+            }
           }
-        }
-        event.data.forEach(function (rect) {
-          /*
-          if (rect.color === 'custom') {
-            rect.color = tracker.customColor;
-          }
-          */
-          const x = windowX - (rect.x / 600 * windowX + rect.width / 2);
-          const y = rect.y / 450 * windowY + rect.height / 2;
-          window.trackEvent.prevX = window.trackEvent.x;
-          window.trackEvent.prevY = window.trackEvent.y;
-          window.trackEvent.x = x;
-          window.trackEvent.y = y;
-
-        });
+        })
       });
 
       initGUIControllers(tracker);

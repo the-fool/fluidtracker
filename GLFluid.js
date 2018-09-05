@@ -1232,6 +1232,10 @@
         this.qualityDirection = 0;
         this.renderFluidEnabled = true;
         this.renderParticlesEnabled = true;
+
+        // which item to track
+        this.which = 0;
+
         this.lastMouseClipSpace = new lime.math.Vector2();
         this.lastMouse = new lime.math.Vector2();
         this.mouseClipSpace = new lime.math.Vector2();
@@ -1239,6 +1243,17 @@
         this.lastMousePointKnown = false;
         this.mousePointKnown = false;
         this.isMouseDown = false;
+
+
+        this.lastMouseClipSpace2 = new lime.math.Vector2();
+        this.lastMouse2 = new lime.math.Vector2();
+        this.mouseClipSpace2 = new lime.math.Vector2();
+        this.mouse2 = new lime.math.Vector2();
+        this.lastMousePointKnown2 = false;
+        this.mousePointKnown2 = false;
+        this.isMouseDown2 = false;
+
+
         this.screenBuffer = null;
         this.textureQuad = null;
         lime.app.Application.call(this);
@@ -1287,10 +1302,20 @@
                     this.renderParticlesShader = new ColorParticleMotion();
                     this.updateDyeShader = new MouseDye();
                     this.mouseForceShader = new MouseForce();
+
+                    // DYE SHADER
                     this.updateDyeShader.mouseClipSpace.set_data(this.mouseClipSpace);
                     this.updateDyeShader.lastMouseClipSpace.set_data(this.lastMouseClipSpace);
+
+                    this.updateDyeShader.mouseClipSpace2.set_data(this.mouseClipSpace2);
+                    this.updateDyeShader.lastMouseClipSpace2.set_data(this.lastMouseClipSpace2);
+
+                    // FORCE SHADER
                     this.mouseForceShader.mouseClipSpace.set_data(this.mouseClipSpace);
                     this.mouseForceShader.lastMouseClipSpace.set_data(this.lastMouseClipSpace);
+                    this.mouseForceShader.mouseClipSpace2.set_data(this.mouseClipSpace2);
+                    this.mouseForceShader.lastMouseClipSpace2.set_data(this.lastMouseClipSpace2);
+
                     var cellScale = 32;
                     this.fluid = new GPUFluid(gl, Math.round(this.windows[0].width * this.fluidScale), Math.round(this.windows[0].height * this.fluidScale), cellScale, this.fluidIterations);
                     this.fluid.set_updateDyeShader(this.updateDyeShader);
@@ -1299,13 +1324,6 @@
                     this.particles.set_flowScaleX(this.fluid.simToClipSpaceX(1));
                     this.particles.set_flowScaleY(this.fluid.simToClipSpaceY(1));
                     this.particles.stepParticlesShader.dragCoefficient.set_data(1);
-                    var clickCount = 0;
-                    lime.ui.MouseEventManager.onMouseUp.add(function (x, y, button) {
-                        clickCount++;
-                    });
-                    haxe.Timer.delay(function () {
-                        var fps = _g.performanceMonitor.fpsSample.average;
-                    }, 6000);
                     var gui = new dat.GUI({
                         autoPlace: true
                     });
@@ -1371,61 +1389,78 @@
             var dt = this.time - this.lastTime;
             this.lastTime = this.time;
             if (dt > 0) this.performanceMonitor.recordFPS(1 / dt);
-            /*
-            if (this.lastMousePointKnown) {
-                this.updateDyeShader.isMouseDown.set(this.isMouseDown);
-                this.mouseForceShader.isMouseDown.set(this.isMouseDown);
-            }
-            */
-            const tracked = window.trackEvent.x !== undefined;
-            this.updateDyeShader.isMouseDown.set(tracked);
-            this.mouseForceShader.isMouseDown.set(tracked);
-            if (tracked) {
-                const x = window.trackEvent.x;
-                const y = window.trackEvent.y;
-                this.mouse.setTo(x, y);
-                this.mouseClipSpace.setTo(x / this.windows[0].width * 2 - 1, (this.windows[0].height - y) / this.windows[0].height * 2 - 1);
-                this.mousePointKnown = true;
-            } else {
-                this.mousePointKnown = false;
-            }
-            
+            window.trackEvents.forEach((e, i) => {
+                const tracked = e.x !== undefined;
+                const x = e.x;
+                const y = e.y;
+                this.updateDyeShader.which.set(i)
+                this.mouseForceShader.which.set(i);
+                if (i === 0) {
+                    this.updateDyeShader.isMouseDown.set(tracked);
+                    this.mouseForceShader.isMouseDown.set(tracked);
+                    this.mousePointKnown = tracked;
+                    if (tracked) {
+                        this.mouse.setTo(x, y);
+                        this.mouseClipSpace.setTo(x / this.windows[0].width * 2 - 1, (this.windows[0].height - y) / this.windows[0].height * 2 - 1);
+                    }
+                }
 
-            this.fluid.step(dt);
-            this.particles.stepParticlesShader.flowVelocityField.set_data(this.fluid.velocityRenderTarget.readFromTexture);
-            if (this.renderParticlesEnabled) this.particles.step(dt);
-            this.gl.viewport(0, 0, this.offScreenTarget.width, this.offScreenTarget.height);
-            this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.offScreenTarget.frameBufferObject);
-            this.gl.clearColor(0, 0, 0, 1);
-            this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-            this.gl.enable(this.gl.BLEND);
-            this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.SRC_ALPHA);
-            this.gl.blendEquation(this.gl.FUNC_ADD);
-            if (this.renderParticlesEnabled) {
-                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.particles.particleUVs);
-                this.renderParticlesShader.particleData.set_data(this.particles.particleData.readFromTexture);
-                this.renderParticlesShader.activate(true, true);
-                this.gl.drawArrays(this.gl.POINTS, 0, this.particles.count);
-                this.renderParticlesShader.deactivate();
-            }
-            if (this.renderFluidEnabled) {
+                if (i === 1) {
+                    this.updateDyeShader.isMouseDown2.set(tracked);
+                    this.mouseForceShader.isMouseDown2.set(tracked);
+                    this.mousePointKnown2 = tracked;
+                    if (tracked) {
+                        this.mouse2.setTo(x, y);
+                        this.mouseClipSpace2.setTo(x / this.windows[0].width * 2 - 1, (this.windows[0].height - y) / this.windows[0].height * 2 - 1);
+                    }
+                }
+
+
+                this.fluid.step(dt);
+                this.particles.stepParticlesShader.flowVelocityField.set_data(this.fluid.velocityRenderTarget.readFromTexture);
+                if (this.renderParticlesEnabled) this.particles.step(dt);
+                this.gl.viewport(0, 0, this.offScreenTarget.width, this.offScreenTarget.height);
+                this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.offScreenTarget.frameBufferObject);
+                this.gl.clearColor(0, 0, 0, 1);
+                this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+                this.gl.enable(this.gl.BLEND);
+                this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.SRC_ALPHA);
+                this.gl.blendEquation(this.gl.FUNC_ADD);
+                if (this.renderParticlesEnabled) {
+                    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.particles.particleUVs);
+                    this.renderParticlesShader.particleData.set_data(this.particles.particleData.readFromTexture);
+                    this.renderParticlesShader.activate(true, true);
+                    this.gl.drawArrays(this.gl.POINTS, 0, this.particles.count);
+                    this.renderParticlesShader.deactivate();
+                }
+                if (this.renderFluidEnabled) {
+                    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.textureQuad);
+                    this.screenTextureShader.texture.set_data(this.fluid.dyeRenderTarget.readFromTexture);
+                    this.screenTextureShader.activate(true, true);
+                    this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+                    this.screenTextureShader.deactivate();
+                }
+                this.gl.disable(this.gl.BLEND);
+                this.gl.viewport(0, 0, this.windows[0].width, this.windows[0].height);
+                this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.screenBuffer);
                 this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.textureQuad);
-                this.screenTextureShader.texture.set_data(this.fluid.dyeRenderTarget.readFromTexture);
+                this.screenTextureShader.texture.set_data(this.offScreenTarget.texture);
                 this.screenTextureShader.activate(true, true);
                 this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
                 this.screenTextureShader.deactivate();
-            }
-            this.gl.disable(this.gl.BLEND);
-            this.gl.viewport(0, 0, this.windows[0].width, this.windows[0].height);
-            this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.screenBuffer);
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.textureQuad);
-            this.screenTextureShader.texture.set_data(this.offScreenTarget.texture);
-            this.screenTextureShader.activate(true, true);
-            this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
-            this.screenTextureShader.deactivate();
-            this.lastMouse.setTo(this.mouse.x, this.mouse.y);
-            this.lastMouseClipSpace.setTo(this.mouse.x / this.windows[0].width * 2 - 1, (this.windows[0].height - this.mouse.y) / this.windows[0].height * 2 - 1);
-            this.lastMousePointKnown = this.mousePointKnown;
+
+                if (i == 0) {
+                    this.lastMouse.setTo(this.mouse.x, this.mouse.y);
+                    this.lastMouseClipSpace.setTo(this.mouse.x / this.windows[0].width * 2 - 1, (this.windows[0].height - this.mouse.y) / this.windows[0].height * 2 - 1);
+                    this.lastMousePointKnown = this.mousePointKnown;
+                }
+                if (i == 1) {
+                    this.lastMouse2.setTo(this.mouse2.x, this.mouse2.y);
+                    this.lastMouseClipSpace2.setTo(this.mouse2.x / this.windows[0].width * 2 - 1, (this.windows[0].height - this.mouse2.y) / this.windows[0].height * 2 - 1);
+                    this.lastMousePointKnown2 = this.mousePointKnown2;
+                }
+            });
+
         },
         renderTexture: function (texture) {
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.textureQuad);
@@ -1541,15 +1576,15 @@
             return (this.windows[0].height - y) / this.windows[0].height * 2 - 1;
         },
         onMouseDown: function (x, y, button) {
-            this.isMouseDown = true;
+            // this.isMouseDown = true;
         },
         onMouseUp: function (x, y, button) {
-            this.isMouseDown = false;
+            // this.isMouseDown = false;
         },
         onMouseMove: function (x, y, button) {
-            this.mouse.setTo(x, y);
-            this.mouseClipSpace.setTo(x / this.windows[0].width * 2 - 1, (this.windows[0].height - y) / this.windows[0].height * 2 - 1);
-            this.mousePointKnown = true;
+            // this.mouse.setTo(x, y);
+            // this.mouseClipSpace.setTo(x / this.windows[0].width * 2 - 1, (this.windows[0].height - y) / this.windows[0].height * 2 - 1);
+            // this.mousePointKnown = true;
         },
         updateMouseCoord: function (x, y) {
             this.mouse.setTo(x, y);
@@ -1647,7 +1682,89 @@
     MouseDye.__super__ = UpdateDye;
     MouseDye.prototype = $extend(UpdateDye.prototype, {
         create: function () {
-            this.initFromSource("\n#ifdef GL_ES\nprecision mediump float;\n#endif\n\n \r\nattribute vec2 vertexPosition;\r\n\r\nuniform float aspectRatio;\r\n\r\nvarying vec2 texelCoord;\r\n\r\n\r\nvarying vec2 p;\r\n\r\nvoid main() {\r\n\ttexelCoord = vertexPosition;\r\n\t\r\n\tvec2 clipSpace = 2.0*texelCoord - 1.0;\t\n\t\r\n\tp = vec2(clipSpace.x * aspectRatio, clipSpace.y);\r\n\r\n\tgl_Position = vec4(clipSpace, 0.0, 1.0 );\t\r\n}\r\n\n\n\n\n\n", "\n#ifdef GL_ES\nprecision mediump float;\n#endif\n\n#define PRESSURE_BOUNDARY\n#define VELOCITY_BOUNDARY\n\nuniform vec2 invresolution;\nuniform float aspectRatio;\n\nvec2 clipToSimSpace(vec2 clipSpace){\n    return  vec2(clipSpace.x * aspectRatio, clipSpace.y);\n}\n\nvec2 simToTexelSpace(vec2 simSpace){\n    return vec2(simSpace.x / aspectRatio + 1.0 , simSpace.y + 1.0)*.5;\n}\n\n\nfloat samplePressue(sampler2D pressure, vec2 coord){\n    vec2 cellOffset = vec2(0.0, 0.0);\n\n    \n    \n    \n    #ifdef PRESSURE_BOUNDARY\n    if(coord.x < 0.0)      cellOffset.x = 1.0;\n    else if(coord.x > 1.0) cellOffset.x = -1.0;\n    if(coord.y < 0.0)      cellOffset.y = 1.0;\n    else if(coord.y > 1.0) cellOffset.y = -1.0;\n    #endif\n\n    return texture2D(pressure, coord + cellOffset * invresolution).x;\n}\n\n\nvec2 sampleVelocity(sampler2D velocity, vec2 coord){\n    vec2 cellOffset = vec2(0.0, 0.0);\n    vec2 multiplier = vec2(1.0, 1.0);\n\n    \n    \n    \n    #ifdef VELOCITY_BOUNDARY\n    if(coord.x<0.0){\n        cellOffset.x = 1.0;\n        multiplier.x = -1.0;\n    }else if(coord.x>1.0){\n        cellOffset.x = -1.0;\n        multiplier.x = -1.0;\n    }\n    if(coord.y<0.0){\n        cellOffset.y = 1.0;\n        multiplier.y = -1.0;\n    }else if(coord.y>1.0){\n        cellOffset.y = -1.0;\n        multiplier.y = -1.0;\n    }\n    #endif\n\n    return multiplier * texture2D(velocity, coord + cellOffset * invresolution).xy;\n}\n\nuniform sampler2D dye;\n\tuniform float dt;\n\tuniform float dx;\n\tvarying vec2 texelCoord;\n\tvarying vec2 p;\n\n\nfloat distanceToSegment(vec2 a, vec2 b, vec2 p, out float fp){\n\tvec2 d = p - a;\n\tvec2 x = b - a;\n\n\tfp = 0.0; \n\tfloat lx = length(x);\n\t\n\tif(lx <= 0.0001) return length(d);\n\n\tfloat projection = dot(d, x / lx); \n\n\tfp = projection / lx;\n\n\tif(projection < 0.0)            return length(d);\n\telse if(projection > length(x)) return length(p - b);\n\treturn sqrt(abs(dot(d,d) - projection*projection));\n}\nfloat distanceToSegment(vec2 a, vec2 b, vec2 p){\n\tfloat fp;\n\treturn distanceToSegment(a, b, p, fp);\n}\n\tuniform bool isMouseDown;\n\tuniform vec2 mouseClipSpace;\n\tuniform vec2 lastMouseClipSpace;\n\tvoid main(){\n\t\tvec4 color = texture2D(dye, texelCoord);\n\t\tcolor.r *= (0.9797);\n\t\tcolor.g *= (0.9494);\n\t\tcolor.b *= (0.9696);\n\t\tif(isMouseDown){\t\t\t\n\t\t\tvec2 mouse = clipToSimSpace(mouseClipSpace);\n\t\t\tvec2 lastMouse = clipToSimSpace(lastMouseClipSpace);\n\t\t\tvec2 mouseVelocity = -(lastMouse - mouse)/dt;\n\t\t\t\n\t\t\t\n\t\t\tfloat fp;\n\t\t\tfloat l = distanceToSegment(mouse, lastMouse, p, fp);\n\t\t\tfloat taperFactor = 0.6;\n\t\t\tfloat projectedFraction = 1.0 - clamp(fp, 0.0, 1.0)*taperFactor;\n\t\t\tfloat R = 0.025;\n\t\t\tfloat m = exp(-l/R);\n\t\t\t\n \t\t\tfloat speed = length(mouseVelocity);\n\t\t\tfloat x = clamp((speed * speed * 0.02 - l * 5.0) * projectedFraction, 0., 1.);\n\t\t\tcolor.rgb += m * (\n\t\t\t\tmix(vec3(2.4, 0, 5.9) / 60.0, vec3(0.2, 51.8, 100) / 30.0, x)\n \t\t\t\t+ (vec3(100) / 100.) * pow(x, 9.)\n\t\t\t);\n\t\t}\n\t\tgl_FragColor = color;\n\t}\n");
+            this.initFromSource(`
+            #ifdef GL_ES
+            precision mediump float;
+            #endif
+            
+            attribute vec2 vertexPosition;
+            uniform float aspectRatio;
+            varying vec2 texelCoord;
+            varying vec2 p;
+            
+            void main() {
+                texelCoord = vertexPosition;
+                vec2 clipSpace = 2.0*texelCoord - 1.0;
+                p = vec2(clipSpace.x * aspectRatio, clipSpace.y);
+                gl_Position = vec4(clipSpace, 0.0, 1.0 );
+            }`, `
+            
+            #ifdef GL_ES
+            precision mediump float;
+            #endif
+            
+            #define PRESSURE_BOUNDARY
+            #define VELOCITY_BOUNDARY
+            uniform vec2 invresolution;
+            uniform float aspectRatio;
+            
+            vec2 clipToSimSpace(vec2 clipSpace){    
+                return  vec2(clipSpace.x * aspectRatio, clipSpace.y);
+            }
+            vec2 simToTexelSpace(vec2 simSpace){    
+                return vec2(simSpace.x / aspectRatio + 1.0 , simSpace.y + 1.0)*.5;
+            }
+            
+            
+            float samplePressue(sampler2D pressure, vec2 coord){\n    vec2 cellOffset = vec2(0.0, 0.0);\n\n    \n    \n    \n    #ifdef PRESSURE_BOUNDARY\n    if(coord.x < 0.0)      cellOffset.x = 1.0;\n    else if(coord.x > 1.0) cellOffset.x = -1.0;\n    if(coord.y < 0.0)      cellOffset.y = 1.0;\n    else if(coord.y > 1.0) cellOffset.y = -1.0;\n    #endif\n\n    return texture2D(pressure, coord + cellOffset * invresolution).x;\n}\n\n\nvec2 sampleVelocity(sampler2D velocity, vec2 coord){\n    vec2 cellOffset = vec2(0.0, 0.0);\n    vec2 multiplier = vec2(1.0, 1.0);\n\n    \n    \n    \n    #ifdef VELOCITY_BOUNDARY\n    if(coord.x<0.0){\n        cellOffset.x = 1.0;\n        multiplier.x = -1.0;\n    }else if(coord.x>1.0){\n        cellOffset.x = -1.0;\n        multiplier.x = -1.0;\n    }\n    if(coord.y<0.0){\n        cellOffset.y = 1.0;\n        multiplier.y = -1.0;\n    }else if(coord.y>1.0){\n        cellOffset.y = -1.0;\n        multiplier.y = -1.0;\n    }\n    #endif\n\n    return multiplier * texture2D(velocity, coord + cellOffset * invresolution).xy;\n}\n\nuniform sampler2D dye;\n\tuniform float dt;\n\tuniform float dx;\n\tvarying vec2 texelCoord;\n\tvarying vec2 p;\n\n\nfloat distanceToSegment(vec2 a, vec2 b, vec2 p, out float fp){\n\tvec2 d = p - a;\n\tvec2 x = b - a;\n\n\tfp = 0.0; \n\tfloat lx = length(x);\n\t\n\tif(lx <= 0.0001) return length(d);\n\n\tfloat projection = dot(d, x / lx); \n\n\tfp = projection / lx;\n\n\tif(projection < 0.0)            return length(d);\n\telse if(projection > length(x)) return length(p - b);\n\treturn sqrt(abs(dot(d,d) - projection*projection));\n}\nfloat distanceToSegment(vec2 a, vec2 b, vec2 p){\n\tfloat fp;\n\treturn distanceToSegment(a, b, p, fp);\n}
+            
+            uniform bool isMouseDown;
+            uniform vec2 mouseClipSpace;
+            uniform vec2 lastMouseClipSpace;
+            
+            uniform bool isMouseDown2;
+            uniform vec2 mouseClipSpace2;
+            uniform vec2 lastMouseClipSpace2;
+            uniform int which;
+
+            void main(){
+                bool doit;
+                vec4 color = texture2D(dye, texelCoord);
+                vec2 mouse;
+                vec2 lastMouse;
+                vec2 mouseVelocity;
+                color.r *= (0.9797);
+                color.g *= (0.9494);
+                color.b *= (0.9696);
+                
+                if (which == 0) {
+                    doit = isMouseDown;
+                    mouse = clipToSimSpace(mouseClipSpace);
+                    lastMouse = clipToSimSpace(lastMouseClipSpace);
+                } else if (which == 1) {
+                    doit = isMouseDown2;
+                    mouse = clipToSimSpace(mouseClipSpace2);
+                    lastMouse = clipToSimSpace(lastMouseClipSpace2);
+                } else {
+                    doit = false;
+                }
+                if(doit){
+                    mouseVelocity = -(lastMouse - mouse)/dt;
+                    float fp;
+                    float l = distanceToSegment(mouse, lastMouse, p, fp);
+                    float taperFactor = 0.6;
+                    float projectedFraction = 1.0 - clamp(fp, 0.0, 1.0)*taperFactor;
+                    float R = 0.025;
+                    float m = exp(-l/R);
+                    float speed = length(mouseVelocity);
+                    float x = clamp((speed * speed * 0.02 - l * 5.0) * projectedFraction, 0., 1.);
+                    color.rgb += m * (
+                        mix(vec3(2.4, 0, 5.9) / 60.0, vec3(0.2, 51.8, 100) / 30.0, x)
+                        + (vec3(100) / 100.) * pow(x, 9.)
+                    );
+                }
+                gl_FragColor = color;
+            }`);
             this.ready = true;
         },
         createProperties: function () {
@@ -1661,6 +1778,18 @@
             var instance2 = Type.createInstance(Type.resolveClass("shaderblox.uniforms.UVec2"), ["lastMouseClipSpace", -1]);
             this.lastMouseClipSpace = instance2;
             this.uniforms.push(instance2);
+            var instance = Type.createInstance(Type.resolveClass("shaderblox.uniforms.UBool"), ["isMouseDown2", -1]);
+            this.isMouseDown2 = instance;
+            this.uniforms.push(instance);
+            var instance1 = Type.createInstance(Type.resolveClass("shaderblox.uniforms.UVec2"), ["mouseClipSpace2", -1]);
+            this.mouseClipSpace2 = instance1;
+            this.uniforms.push(instance1);
+            var instance2 = Type.createInstance(Type.resolveClass("shaderblox.uniforms.UVec2"), ["lastMouseClipSpace2", -1]);
+            this.lastMouseClipSpace2 = instance2;
+            this.uniforms.push(instance2);
+            var instance2 = Type.createInstance(Type.resolveClass("shaderblox.uniforms.UInt"), ["which", -1]);
+            this.which = instance2;
+            this.uniforms.push(instance2);
             this.aStride += 0;
         },
         __class__: MouseDye
@@ -1673,7 +1802,51 @@
     MouseForce.__super__ = ApplyForces;
     MouseForce.prototype = $extend(ApplyForces.prototype, {
         create: function () {
-            this.initFromSource("\n#ifdef GL_ES\nprecision mediump float;\n#endif\n\n \r\nattribute vec2 vertexPosition;\r\n\r\nuniform float aspectRatio;\r\n\r\nvarying vec2 texelCoord;\r\n\r\n\r\nvarying vec2 p;\r\n\r\nvoid main() {\r\n\ttexelCoord = vertexPosition;\r\n\t\r\n\tvec2 clipSpace = 2.0*texelCoord - 1.0;\t\n\t\r\n\tp = vec2(clipSpace.x * aspectRatio, clipSpace.y);\r\n\r\n\tgl_Position = vec4(clipSpace, 0.0, 1.0 );\t\r\n}\r\n\n\n\n\n\n", "\n#ifdef GL_ES\nprecision mediump float;\n#endif\n\n#define PRESSURE_BOUNDARY\n#define VELOCITY_BOUNDARY\n\nuniform vec2 invresolution;\nuniform float aspectRatio;\n\nvec2 clipToSimSpace(vec2 clipSpace){\n    return  vec2(clipSpace.x * aspectRatio, clipSpace.y);\n}\n\nvec2 simToTexelSpace(vec2 simSpace){\n    return vec2(simSpace.x / aspectRatio + 1.0 , simSpace.y + 1.0)*.5;\n}\n\n\nfloat samplePressue(sampler2D pressure, vec2 coord){\n    vec2 cellOffset = vec2(0.0, 0.0);\n\n    \n    \n    \n    #ifdef PRESSURE_BOUNDARY\n    if(coord.x < 0.0)      cellOffset.x = 1.0;\n    else if(coord.x > 1.0) cellOffset.x = -1.0;\n    if(coord.y < 0.0)      cellOffset.y = 1.0;\n    else if(coord.y > 1.0) cellOffset.y = -1.0;\n    #endif\n\n    return texture2D(pressure, coord + cellOffset * invresolution).x;\n}\n\n\nvec2 sampleVelocity(sampler2D velocity, vec2 coord){\n    vec2 cellOffset = vec2(0.0, 0.0);\n    vec2 multiplier = vec2(1.0, 1.0);\n\n    \n    \n    \n    #ifdef VELOCITY_BOUNDARY\n    if(coord.x<0.0){\n        cellOffset.x = 1.0;\n        multiplier.x = -1.0;\n    }else if(coord.x>1.0){\n        cellOffset.x = -1.0;\n        multiplier.x = -1.0;\n    }\n    if(coord.y<0.0){\n        cellOffset.y = 1.0;\n        multiplier.y = -1.0;\n    }else if(coord.y>1.0){\n        cellOffset.y = -1.0;\n        multiplier.y = -1.0;\n    }\n    #endif\n\n    return multiplier * texture2D(velocity, coord + cellOffset * invresolution).xy;\n}\n\nuniform sampler2D velocity;\n\tuniform float dt;\n\tuniform float dx;\n\tvarying vec2 texelCoord;\n\tvarying vec2 p;\n\n\nfloat distanceToSegment(vec2 a, vec2 b, vec2 p, out float fp){\n\tvec2 d = p - a;\n\tvec2 x = b - a;\n\n\tfp = 0.0; \n\tfloat lx = length(x);\n\t\n\tif(lx <= 0.0001) return length(d);\n\n\tfloat projection = dot(d, x / lx); \n\n\tfp = projection / lx;\n\n\tif(projection < 0.0)            return length(d);\n\telse if(projection > length(x)) return length(p - b);\n\treturn sqrt(abs(dot(d,d) - projection*projection));\n}\nfloat distanceToSegment(vec2 a, vec2 b, vec2 p){\n\tfloat fp;\n\treturn distanceToSegment(a, b, p, fp);\n}\n\tuniform bool isMouseDown;\n\tuniform vec2 mouseClipSpace;\n\tuniform vec2 lastMouseClipSpace;\n\tvoid main(){\n\t\tvec2 v = texture2D(velocity, texelCoord).xy;\n\t\tv.xy *= 0.999;\n\t\tif(isMouseDown){\n\t\t\tvec2 mouse = clipToSimSpace(mouseClipSpace);\n\t\t\tvec2 lastMouse = clipToSimSpace(lastMouseClipSpace);\n\t\t\tvec2 mouseVelocity = -(lastMouse - mouse)/dt;\n\t\t\t\t\n\t\t\t\n\t\t\tfloat fp; \n\t\t\tfloat l = distanceToSegment(mouse, lastMouse, p, fp);\n\t\t\tfloat taperFactor = 0.6;\n\t\t\tfloat projectedFraction = 1.0 - clamp(fp, 0.0, 1.0)*taperFactor;\n\t\t\tfloat R = 0.015;\n\t\t\tfloat m = exp(-l/R); \n\t\t\tm *= projectedFraction * projectedFraction;\n\t\t\tvec2 targetVelocity = mouseVelocity*dx;\n\t\t\tv += (targetVelocity - v)*m;\n\t\t}\n\t\tgl_FragColor = vec4(v, 0, 1.);\n\t}\n");
+            this.initFromSource(`\n#ifdef GL_ES\nprecision mediump float;\n#endif\n\n \r\nattribute vec2 vertexPosition;\r\n\r\nuniform float aspectRatio;\r\n\r\nvarying vec2 texelCoord;\r\n\r\n\r\nvarying vec2 p;\r\n\r\nvoid main() {\r\n\ttexelCoord = vertexPosition;\r\n\t\r\n\tvec2 clipSpace = 2.0*texelCoord - 1.0;\t\n\t\r\n\tp = vec2(clipSpace.x * aspectRatio, clipSpace.y);\r\n\r\n\tgl_Position = vec4(clipSpace, 0.0, 1.0 );\t\r\n}\r\n\n\n\n\n\n`,
+                `\n#ifdef GL_ES\nprecision mediump float;\n#endif\n\n#define PRESSURE_BOUNDARY\n#define VELOCITY_BOUNDARY\n\nuniform vec2 invresolution;\nuniform float aspectRatio;\n\nvec2 clipToSimSpace(vec2 clipSpace){\n    return  vec2(clipSpace.x * aspectRatio, clipSpace.y);\n}\n\nvec2 simToTexelSpace(vec2 simSpace){\n    return vec2(simSpace.x / aspectRatio + 1.0 , simSpace.y + 1.0)*.5;\n}\n\n\nfloat samplePressue(sampler2D pressure, vec2 coord){\n    vec2 cellOffset = vec2(0.0, 0.0);\n\n    \n    \n    \n    #ifdef PRESSURE_BOUNDARY\n    if(coord.x < 0.0)      cellOffset.x = 1.0;\n    else if(coord.x > 1.0) cellOffset.x = -1.0;\n    if(coord.y < 0.0)      cellOffset.y = 1.0;\n    else if(coord.y > 1.0) cellOffset.y = -1.0;\n    #endif\n\n    return texture2D(pressure, coord + cellOffset * invresolution).x;\n}\n\n\nvec2 sampleVelocity(sampler2D velocity, vec2 coord){\n    vec2 cellOffset = vec2(0.0, 0.0);\n    vec2 multiplier = vec2(1.0, 1.0);\n\n    \n    \n    \n    #ifdef VELOCITY_BOUNDARY\n    if(coord.x<0.0){\n        cellOffset.x = 1.0;\n        multiplier.x = -1.0;\n    }else if(coord.x>1.0){\n        cellOffset.x = -1.0;\n        multiplier.x = -1.0;\n    }\n    if(coord.y<0.0){\n        cellOffset.y = 1.0;\n        multiplier.y = -1.0;\n    }else if(coord.y>1.0){\n        cellOffset.y = -1.0;\n        multiplier.y = -1.0;\n    }\n    #endif\n\n    return multiplier * texture2D(velocity, coord + cellOffset * invresolution).xy;\n}\n\nuniform sampler2D velocity;\n\tuniform float dt;\n\tuniform float dx;\n\tvarying vec2 texelCoord;\n\tvarying vec2 p;\n\n\nfloat distanceToSegment(vec2 a, vec2 b, vec2 p, out float fp){\n\tvec2 d = p - a;\n\tvec2 x = b - a;\n\n\tfp = 0.0; \n\tfloat lx = length(x);\n\t\n\tif(lx <= 0.0001) return length(d);\n\n\tfloat projection = dot(d, x / lx); \n\n\tfp = projection / lx;\n\n\tif(projection < 0.0)            return length(d);\n\telse if(projection > length(x)) return length(p - b);\n\treturn sqrt(abs(dot(d,d) - projection*projection));\n}\nfloat distanceToSegment(vec2 a, vec2 b, vec2 p){\n\tfloat fp;\n\treturn distanceToSegment(a, b, p, fp);\n}\n\t
+            uniform bool isMouseDown;
+            uniform vec2 mouseClipSpace;
+            uniform vec2 lastMouseClipSpace;
+            
+            uniform bool isMouseDown2;
+            uniform vec2 mouseClipSpace2;
+            uniform vec2 lastMouseClipSpace2;
+            uniform int which;
+            
+            void main(){
+                bool doit;
+                vec2 mouse;
+                vec2 lastMouse;
+                vec2 mouseVelocity;
+                vec2 v = texture2D(velocity, texelCoord).xy;
+                v.xy *= 0.999;
+
+                if (which == 0) {
+                    doit = isMouseDown;
+                    mouse = clipToSimSpace(mouseClipSpace);
+                    lastMouse = clipToSimSpace(lastMouseClipSpace);
+                    mouseVelocity = -(lastMouse - mouse)/dt;
+                } else if (which == 1) {
+                    doit = isMouseDown2;
+                    mouse = clipToSimSpace(mouseClipSpace2);
+                    lastMouse = clipToSimSpace(lastMouseClipSpace2);
+                    mouseVelocity = -(lastMouse - mouse)/dt;
+                } else {
+                    doit = false;
+                }
+                if(doit){
+                    float fp; 
+                    float l = distanceToSegment(mouse, lastMouse, p, fp);
+                    float taperFactor = 0.6;
+                    float projectedFraction = 1.0 - clamp(fp, 0.0, 1.0)*taperFactor;
+                    float R = 0.015;
+                    float m = exp(-l/R); 
+                    m *= projectedFraction * projectedFraction;
+                    vec2 targetVelocity = mouseVelocity*dx;
+                    v += (targetVelocity - v)*m;
+                }
+                gl_FragColor = vec4(v, 0, 1.);
+            }`);
             this.ready = true;
         },
         createProperties: function () {
@@ -1687,6 +1860,21 @@
             var instance2 = Type.createInstance(Type.resolveClass("shaderblox.uniforms.UVec2"), ["lastMouseClipSpace", -1]);
             this.lastMouseClipSpace = instance2;
             this.uniforms.push(instance2);
+
+            var instance = Type.createInstance(Type.resolveClass("shaderblox.uniforms.UBool"), ["isMouseDown2", -1]);
+            this.isMouseDown2 = instance;
+            this.uniforms.push(instance);
+            var instance1 = Type.createInstance(Type.resolveClass("shaderblox.uniforms.UVec2"), ["mouseClipSpace2", -1]);
+            this.mouseClipSpace2 = instance1;
+            this.uniforms.push(instance1);
+            var instance2 = Type.createInstance(Type.resolveClass("shaderblox.uniforms.UVec2"), ["lastMouseClipSpace2", -1]);
+            this.lastMouseClipSpace2 = instance2;
+            this.uniforms.push(instance2);
+
+            var instance2 = Type.createInstance(Type.resolveClass("shaderblox.uniforms.UInt"), ["which", -1]);
+            this.which = instance2;
+            this.uniforms.push(instance2);
+
             this.aStride += 0;
         },
         __class__: MouseForce
@@ -8380,6 +8568,48 @@
         },
         __class__: shaderblox.uniforms.UBool
     });
+
+    shaderblox.uniforms.UniformBase_Int = function (name, index, data) {
+        this.name = name;
+        this.location = index;
+        this.dirty = true;
+        this.data = data;
+        this.dirty = true;
+    };
+    $hxClasses["shaderblox.uniforms.UniformBase_Int"] = shaderblox.uniforms.UniformBase_Int;
+    shaderblox.uniforms.UniformBase_Int.__name__ = true;
+    shaderblox.uniforms.UniformBase_Int.prototype = {
+        set: function (data) {
+            this.dirty = true;
+            this.dirty = true;
+            return this.data = data;
+        },
+        setDirty: function () {
+            this.dirty = true;
+        },
+        set_data: function (data) {
+            this.dirty = true;
+            return this.data = data;
+        },
+        __class__: shaderblox.uniforms.UniformBase_Int
+    };
+    shaderblox.uniforms.UInt = function (name, index, f) {
+        if (f == null) f = 0;
+        shaderblox.uniforms.UniformBase_Int.call(this, name, index, f);
+    };
+    $hxClasses["shaderblox.uniforms.UInt"] = shaderblox.uniforms.UInt;
+    shaderblox.uniforms.UInt.__name__ = true;
+    shaderblox.uniforms.UInt.__interfaces__ = [shaderblox.uniforms.IAppliable];
+    shaderblox.uniforms.UInt.__super__ = shaderblox.uniforms.UniformBase_Int;
+    shaderblox.uniforms.UInt.prototype = $extend(shaderblox.uniforms.UniformBase_Int.prototype, {
+        apply: function () {
+            lime.graphics.opengl.GL.context.uniform1i(this.location, this.data);
+            this.dirty = false;
+        },
+        __class__: shaderblox.uniforms.UInt
+    });
+
+
     shaderblox.uniforms.UniformBase_Float = function (name, index, data) {
         this.name = name;
         this.location = index;
