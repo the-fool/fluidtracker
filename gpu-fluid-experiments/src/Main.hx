@@ -12,6 +12,7 @@ import shaderblox.uniforms.UVec2.Vector2;
 typedef UserConfig = {}
 
 class Main extends snow.App{
+	var h:String = untyped window.hello;
 	// var gl = GL;
 	//Simulations
 	var fluid:GPUFluid;
@@ -41,7 +42,6 @@ class Main extends snow.App{
 	var renderParticlesEnabled:Bool = true;
 	var renderFluidEnabled:Bool = true;
 	//
-	var performanceMonitor:PerformanceMonitor;
 	//Parameters
 	var particleCount:Int;
 	var fluidScale:Float;
@@ -54,7 +54,6 @@ class Main extends snow.App{
 	
 	public function new () {
 
-		performanceMonitor = new PerformanceMonitor(35, null, 2000);
 
 		simulationQuality = UltraHigh;
 
@@ -65,7 +64,6 @@ class Main extends snow.App{
 		#end
 
 		#if js
-		performanceMonitor.fpsTooLowCallback = lowerQualityRequired; //auto adjust quality
 
 		//Extract quality parameter, ?q= and set simulation quality
 		var urlParams = js.Web.getParams();
@@ -76,7 +74,6 @@ class Main extends snow.App{
 				var name = Type.enumConstructor(e).toLowerCase();
 				if(q == name){
 					simulationQuality = e;
-					performanceMonitor.fpsTooLowCallback = null; //disable auto quality adjusting
 					break;
 				}
 			}
@@ -118,6 +115,9 @@ class Main extends snow.App{
 	}
 
 	function init():Void {
+		#if js
+		js.Browser.console.log(h);
+		#end
 		GL.disable(GL.DEPTH_TEST);
 		GL.disable(GL.CULL_FACE);
 		GL.disable(GL.DITHER);
@@ -315,7 +315,6 @@ class Main extends snow.App{
 		if(qualityIndex > maxIndex)qualityIndex = maxIndex;
 
 		var newQuality = Type.createEnumIndex(SimulationQuality, qualityIndex);
-		trace('Average FPS: '+performanceMonitor.fpsAverage+', lowering quality to: '+newQuality);
 		this.simulationQuality = newQuality;
 		updateSimulationTextures();
 	}
