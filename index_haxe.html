@@ -1,0 +1,96 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>tracking.js - color with camera</title>
+    <meta id="viewport" name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        window.trackEvents = [{}, {}];
+    </script>
+    <script>
+        window.addEventListener("touchmove", function (event) {
+            event.preventDefault();
+        }, false);
+        if (typeof window.devicePixelRatio != 'undefined' && window.devicePixelRatio > 2) {
+            var meta = document.getElementById("viewport");
+            meta.setAttribute('content', 'width=device-width, initial-scale=' + (2 / window.devicePixelRatio) +
+                ', user-scalable=no');
+        }
+    </script>
+    <script src="lib/tracking.js"></script>
+    <script src="lib/data.gui.js"></script>
+    <script src="scripts/color_camera_gui.js"></script>
+
+    <style>
+        #app {
+                display: block;
+                position: relative;
+                margin: 2em auto 0 auto;
+            }
+    </style>
+</head>
+
+<body style="padding: 0; margin: 0; background-color: #111111;">
+    <div class="demo-frame">
+        <div class="demo-container">
+            <video id="video" width="600" height="450" preload autoplay loop muted controls></video>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        lime.embed("content", 0, 0, "FFFFFF");
+    </script>
+
+    <script>
+        let windowX = window.innerWidth;
+        let windowY = window.innerWidth;
+
+        window.addEventListener('resize', function () {
+            windowX = window.innerWidth;
+            windowY = window.innerWidth;
+        });
+
+        function distance(i, j) {
+            return Math.sqrt((i.x - j.x)**2 + (i.y - j.y)**2)
+        }
+
+        window.addEventListener('load', function () {
+            var video = document.getElementById('video');
+
+            var tracker = new tracking.ColorTracker();
+
+            tracking.track('#video', tracker, {
+                camera: true
+            });
+
+            tracker.on('track', function (event) {
+                event.data.sort((a, b) => a.x - b.x);
+                window.trackEvents.forEach((e, i) => {
+                    const d = event.data[i];
+                    if (d) {
+                        const x = windowX - (d.x / 600 * windowX);
+                        const y = d.y / 450 * windowY;
+                        e.x = x;
+                        e.y = y;
+                        e.retries = 100;
+                    } else {
+                        if (e.retries !== undefined && e.retries > 0) {
+                            e.retries--;
+                        } else {
+                            delete e.x;
+                            delete e.y;
+                        }
+                    }
+                })
+            });
+
+            initGUIControllers(tracker);
+        });
+    </script>
+
+    <script type="text/javascript" src="./gpu-fluid-experiments/bin/web/GPUFluid.js"></script>
+</body>
+
+</html>
