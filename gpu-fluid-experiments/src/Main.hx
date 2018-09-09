@@ -1,10 +1,8 @@
 package;
 
 import haxe.Timer;
-
 import snow.modules.opengl.GL;
 import snow.types.Types;
-
 import gltoolbox.render.RenderTarget;
 import shaderblox.ShaderBase;
 import shaderblox.uniforms.UVec2.Vector2;
@@ -12,33 +10,32 @@ import shaderblox.uniforms.UVec2.Vector2;
 typedef UserConfig = {}
 
 @:expose
-class Main extends snow.App{
+class Main extends snow.App {
+	var events = untyped window.trackEvents;
 	var h:String = untyped window.hello;
 	// var gl = GL;
-	//Simulations
+	// Simulations
 	var fluid:GPUFluid;
 	var particles:GPUParticles;
-	//Geometry
-	var textureQuad:GLBuffer = null; 
-	//Framebuffers
-	var screenBuffer:GLFramebuffer = null;	//null for all platforms excluding ios, where it references the defaultFramebuffer (UIStageView.mm)
-	//Render Targets
+	// Geometry
+	var textureQuad:GLBuffer = null;
+	// Framebuffers
+	var screenBuffer:GLFramebuffer = null; // null for all platforms excluding ios, where it references the defaultFramebuffer (UIStageView.mm)
+	// Render Targets
 	var offScreenTarget:RenderTarget;
-	//Shaders
-	var screenTextureShader   : ScreenTexture;
-	var renderParticlesShader : ColorParticleMotion;
-	var updateDyeShader       : MouseDye;
-	var mouseForceShader      : MouseForce;
-
-	//Window
+	// Shaders
+	var screenTextureShader:ScreenTexture;
+	var renderParticlesShader:ColorParticleMotion;
+	var updateDyeShader:MouseDye;
+	var mouseForceShader:MouseForce;
+	// Window
 	var isMouseDownV = [false, false];
+	var mousePointKnownV = [false, false];
 	var lastMousePointKnownV = [false, false];
-	var mousePointKnownV = [false, false];	
 	var mouseV = [new Vector2(), new Vector2()];
 	var mouseFluidV = [new Vector2(), new Vector2()];
 	var lastMouseV = [new Vector2(), new Vector2()];
 	var lastMouseFluidV = [new Vector2(), new Vector2()];
-
 	var isMouseDown:Bool = false;
 	var mousePointKnown:Bool = false;
 	var lastMousePointKnown:Bool = false;
@@ -46,16 +43,14 @@ class Main extends snow.App{
 	var mouseFluid = new Vector2();
 	var lastMouse = new Vector2();
 	var lastMouseFluid = new Vector2();
-
 	var time:Float;
 	var lastTime:Float;
-
-	//Drawing
+	// Drawing
 	var drag = 0.025;
 	var renderParticlesEnabled:Bool = true;
 	var renderFluidEnabled:Bool = true;
 	//
-	//Parameters
+	// Parameters
 	var particleCount:Int;
 	var fluidScale:Float;
 	var fluidIterations(default, set):Int;
@@ -63,11 +58,9 @@ class Main extends snow.App{
 	var offScreenFilter:Int;
 	var simulationQuality(default, set):SimulationQuality;
 
-	static inline var OFFSCREEN_RENDER = false;//seems to be faster when on!
-	
-	public function new () {
+	static inline var OFFSCREEN_RENDER = false; // seems to be faster when on!
 
-
+	public function new() {
 		simulationQuality = UltraHigh;
 
 		#if desktop
@@ -77,40 +70,37 @@ class Main extends snow.App{
 		#end
 
 		#if js
-
-		//Extract quality parameter, ?q= and set simulation quality
+		// Extract quality parameter, ?q= and set simulation quality
 		var urlParams = js.Web.getParams();
-		if(urlParams.exists('q')){
+		if (urlParams.exists('q')) {
 			var q = StringTools.trim(urlParams.get('q').toLowerCase());
-			//match enum
-			for(e in Type.allEnums(SimulationQuality)){
+			// match enum
+			for (e in Type.allEnums(SimulationQuality)) {
 				var name = Type.enumConstructor(e).toLowerCase();
-				if(q == name){
+				if (q == name) {
 					simulationQuality = e;
 					break;
 				}
 			}
 		}
-		//Extract iterations
-		if(urlParams.exists('iterations')){
+		// Extract iterations
+		if (urlParams.exists('iterations')) {
 			var iterationsParam = Std.parseInt(urlParams.get('iterations'));
-			if(Std.is(iterationsParam, Int))
+			if (Std.is(iterationsParam, Int))
 				fluidIterations = iterationsParam;
 		}
 		#end
 	}
 
-
-	override function config( config:AppConfig ) : AppConfig {
-		
+	override function config(config:AppConfig):AppConfig {
 		#if js
 		config.runtime.prevent_default_context_menu = false;
 		#end
 		config.window.borderless = true;
 		config.window.fullscreen = true;
 		config.window.title = "GPU Fluid";
-		//for some reason, window width and height are set initially from config in browsers and 
-		//ignores true size
+		// for some reason, window width and height are set initially from config in browsers and
+		// ignores true size
 		#if js
 		config.window.width = js.Browser.window.innerWidth;
 		config.window.height = js.Browser.window.innerHeight;
@@ -118,14 +108,11 @@ class Main extends snow.App{
 
 		config.render.antialiasing = 0;
 
-
-	    return config;
+		return config;
 	}
 
-	override function ready(){
-
+	override function ready() {
 		init();
-
 	}
 
 	function init():Void {
@@ -136,20 +123,19 @@ class Main extends snow.App{
 		GL.disable(GL.CULL_FACE);
 		GL.disable(GL.DITHER);
 
-        #if ios screenBuffer = GL.getParameter(GL.FRAMEBUFFER_BINDING); #end
+		#if ios
+		screenBuffer = GL.getParameter(GL.FRAMEBUFFER_BINDING);
+		#end
 
 		textureQuad = gltoolbox.GeometryTools.createQuad(0, 0, 1, 1);
 
-		if(OFFSCREEN_RENDER){
-			offScreenTarget = new RenderTarget(
-				Math.round(app.runtime.window_width()*offScreenScale),
-				Math.round(app.runtime.window_height()*offScreenScale),
-				gltoolbox.TextureTools.createTextureFactory({
-					channelType: GL.RGB,
-					dataType: GL.UNSIGNED_BYTE,
-					filter: offScreenFilter
-				})
-			);
+		if (OFFSCREEN_RENDER) {
+			offScreenTarget = new RenderTarget(Math.round(app.runtime.window_width() * offScreenScale), Math.round(app.runtime.window_height
+				() * offScreenScale), gltoolbox.TextureTools.createTextureFactory({
+				channelType: GL.RGB,
+				dataType: GL.UNSIGNED_BYTE,
+				filter: offScreenFilter
+			}));
 		}
 
 		screenTextureShader = new ScreenTexture();
@@ -157,23 +143,33 @@ class Main extends snow.App{
 		updateDyeShader = new MouseDye();
 		mouseForceShader = new MouseForce();
 
-		updateDyeShader.mouse.data = mouseFluid; 
+		updateDyeShader.mouse.data = mouseFluid;
 		updateDyeShader.lastMouse.data = lastMouseFluid;
+
+		updateDyeShader.mouse1.data = mouseFluidV[0];
+		updateDyeShader.lastMouse1.data = lastMouseFluidV[0];
+		updateDyeShader.mouse2.data = mouseFluidV[1];
+		updateDyeShader.lastMouse2.data = lastMouseFluidV[1];
 		updateDyeShader.drag.data = drag;
 
 		mouseForceShader.mouse.data = mouseFluid;
 		mouseForceShader.lastMouse.data = lastMouseFluid;
+		mouseForceShader.mouse1.data = mouseFluidV[0];
+		mouseForceShader.lastMouse1.data = lastMouseFluidV[0];
+		mouseForceShader.mouse2.data = mouseFluidV[1];
+		mouseForceShader.lastMouse2.data = lastMouseFluidV[1];
 		mouseForceShader.drag.data = drag;
 
 		var cellScale = 32;
-		fluid = new GPUFluid(Math.round(app.runtime.window_width()*fluidScale), Math.round(app.runtime.window_height()*fluidScale), cellScale, fluidIterations);
+		fluid = new GPUFluid(Math.round(app.runtime.window_width() * fluidScale), Math.round(app.runtime.window_height() * fluidScale), cellScale,
+			fluidIterations);
 		fluid.updateDyeShader = updateDyeShader;
 		fluid.applyForcesShader = mouseForceShader;
 
 		particles = new GPUParticles(particleCount);
-		//scale from fluid's velocity field to clipSpace, which the particle velocity uses
-		particles.flowScaleX = 1/(fluid.cellSize * fluid.aspectRatio);
-		particles.flowScaleY = 1/fluid.cellSize;
+		// scale from fluid's velocity field to clipSpace, which the particle velocity uses
+		particles.flowScaleX = 1 / (fluid.cellSize * fluid.aspectRatio);
+		particles.flowScaleY = 1 / fluid.cellSize;
 		particles.dragCoefficient = 1;
 
 		#if ios
@@ -183,236 +179,268 @@ class Main extends snow.App{
 		lastTime = haxe.Timer.stamp();
 	}
 
-	override function update( dt:Float ){
-		dt = 0.016;//@!
-		//Physics
-		//interaction
-		updateDyeShader.isMouseDown.set(isMouseDown && lastMousePointKnown);
-		mouseForceShader.isMouseDown.set(isMouseDown && lastMousePointKnown);
-
+	override function update(dt:Float) {
+		dt = 0.016; // @!
 		var _drag = untyped window.drag;
+		var isActive = false;
+		var x;
+		var y;
 		if (_drag != drag) {
 			updateDyeShader.drag.set(_drag);
 		}
-		//step physics
+		for (i in 0...2) {
+			updateDyeShader.which.set(i);
+			mouseForceShader.which.set(i);
+			isActive = events[i].x != null;
+			mousePointKnownV[i] = isActive;
+			x = events[i].x;
+			y = events[i].y;
+			mouseFluidV[i].set(fluid.clipToAspectSpaceX(windowToClipSpaceX(x)), fluid.clipToAspectSpaceY(windowToClipSpaceY(y)));
+			mouseV[i].set(x, y);
+			if (i == 0) {
+				updateDyeShader.isMouseDown1.set(isActive);
+				mouseForceShader.isMouseDown1.set(isActive);
+			} else if (i == 1) {
+				updateDyeShader.isMouseDown2.set(isActive);
+				mouseForceShader.isMouseDown2.set(isActive);
+			}
+		}
+		// Physics
+		// interaction
+		updateDyeShader.isMouseDown.set(isMouseDown && lastMousePointKnown);
+		mouseForceShader.isMouseDown.set(isMouseDown && lastMousePointKnown);
+
+		// step physics
 		fluid.step(dt);
 
 		particles.flowVelocityField = fluid.velocityRenderTarget.readFromTexture;
-		if(renderParticlesEnabled) particles.step(dt);
+		if (renderParticlesEnabled)
+			particles.step(dt);
 
 		updateLastMouse();
 	}
 
-	override function tick (delta:Float):Void {
+	override function tick(delta:Float):Void {
 		// time = haxe.Timer.stamp();
 		// var dt = time - lastTime; //60fps ~ 0.016
 		// lastTime = time;
 
-		//Render
-		//render to offScreen
-		if(OFFSCREEN_RENDER){
-			GL.viewport (0, 0, offScreenTarget.width, offScreenTarget.height);
+		// Render
+		// render to offScreen
+		if (OFFSCREEN_RENDER) {
+			GL.viewport(0, 0, offScreenTarget.width, offScreenTarget.height);
 			GL.bindFramebuffer(GL.FRAMEBUFFER, offScreenTarget.frameBufferObject);
-		}else{
-			GL.viewport (0, 0, app.runtime.window_width(), app.runtime.window_height());
+		} else {
+			GL.viewport(0, 0, app.runtime.window_width(), app.runtime.window_height());
 			GL.bindFramebuffer(GL.FRAMEBUFFER, screenBuffer);
 		}
 
-		GL.clearColor(0,0,0,1);
+		GL.clearColor(0, 0, 0, 1);
 		GL.clear(GL.COLOR_BUFFER_BIT);
 
 		// additive blending
 		GL.enable(GL.BLEND);
-		GL.blendFunc( GL.SRC_ALPHA, GL.SRC_ALPHA );
+		GL.blendFunc(GL.SRC_ALPHA, GL.SRC_ALPHA);
 		GL.blendEquation(GL.FUNC_ADD);
 
-		if(renderParticlesEnabled) renderParticles();
-		if(renderFluidEnabled) renderTexture(fluid.dyeRenderTarget.readFromTexture);
+		if (renderParticlesEnabled)
+			renderParticles();
+		if (renderFluidEnabled)
+			renderTexture(fluid.dyeRenderTarget.readFromTexture);
 
 		GL.disable(GL.BLEND);
 
-		//render offScreen texture to screen
-		if(OFFSCREEN_RENDER){
-			GL.viewport (0, 0, app.runtime.window_width(), app.runtime.window_height());
+		// render offScreen texture to screen
+		if (OFFSCREEN_RENDER) {
+			GL.viewport(0, 0, app.runtime.window_width(), app.runtime.window_height());
 			GL.bindFramebuffer(GL.FRAMEBUFFER, screenBuffer);
 			renderTexture(offScreenTarget.texture);
 		}
 	}
 
-	inline function renderTexture(texture:GLTexture){
-		GL.bindBuffer (GL.ARRAY_BUFFER, textureQuad);
+	inline function renderTexture(texture:GLTexture) {
+		GL.bindBuffer(GL.ARRAY_BUFFER, textureQuad);
 
 		screenTextureShader.texture.data = texture;
-		
+
 		screenTextureShader.activate(true, true);
 		GL.drawArrays(GL.TRIANGLE_STRIP, 0, 4);
 		screenTextureShader.deactivate();
 	}
 
-	inline function renderParticles():Void{
-		//set vertices
+	inline function renderParticles():Void {
+		// set vertices
 		GL.bindBuffer(GL.ARRAY_BUFFER, particles.particleUVs);
 
-		//set uniforms
+		// set uniforms
 		renderParticlesShader.particleData.data = particles.particleData.readFromTexture;
 
-		//draw points
+		// draw points
 		renderParticlesShader.activate(true, true);
 		GL.drawArrays(GL.POINTS, 0, particles.count);
 		renderParticlesShader.deactivate();
 	}
 
-	function updateSimulationTextures(){
-		//only resize if there is a change
+	function updateSimulationTextures() {
+		// only resize if there is a change
 		var w:Int, h:Int;
-		w = Math.round(app.runtime.window_width()*fluidScale); h = Math.round(app.runtime.window_height()*fluidScale);
-		if(w != fluid.width || h != fluid.height) fluid.resize(w, h);
+		w = Math.round(app.runtime.window_width() * fluidScale);
+		h = Math.round(app.runtime.window_height() * fluidScale);
+		if (w != fluid.width || h != fluid.height)
+			fluid.resize(w, h);
 
-		w = Math.round(app.runtime.window_width()*offScreenScale); h = Math.round(app.runtime.window_height()*offScreenScale);
-		if(w != offScreenTarget.width || h != offScreenTarget.height) offScreenTarget.resize(w, h);
+		w = Math.round(app.runtime.window_width() * offScreenScale);
+		h = Math.round(app.runtime.window_height() * offScreenScale);
+		if (w != offScreenTarget.width || h != offScreenTarget.height)
+			offScreenTarget.resize(w, h);
 
-		if(particleCount != particles.count) particles.setCount(particleCount);
+		if (particleCount != particles.count)
+			particles.setCount(particleCount);
 	}
 
-	function set_simulationQuality(quality:SimulationQuality):SimulationQuality{
+	function set_simulationQuality(quality:SimulationQuality):SimulationQuality {
 		switch (quality) {
 			case UltraHigh:
 				particleCount = 1 << 20;
-				fluidScale = 1/2;
+				fluidScale = 1 / 2;
 				fluidIterations = 30;
-				offScreenScale = 1/1;
+				offScreenScale = 1 / 1;
 				offScreenFilter = GL.NEAREST;
 			case High:
 				particleCount = 1 << 20;
-				fluidScale = 1/4;
+				fluidScale = 1 / 4;
 				fluidIterations = 20;
-				offScreenScale = 1/1;
+				offScreenScale = 1 / 1;
 				offScreenFilter = GL.NEAREST;
 			case Medium:
 				particleCount = 1 << 18;
-				fluidScale = 1/4;
+				fluidScale = 1 / 4;
 				fluidIterations = 18;
-				offScreenScale = 1/1;
+				offScreenScale = 1 / 1;
 				offScreenFilter = GL.NEAREST;
 			case Low:
 				particleCount = 1 << 16;
-				fluidScale = 1/5;
+				fluidScale = 1 / 5;
 				fluidIterations = 14;
-				offScreenScale = 1/1;
+				offScreenScale = 1 / 1;
 				offScreenFilter = GL.NEAREST;
 			case UltraLow:
 				particleCount = 1 << 14;
-				fluidScale = 1/6;
+				fluidScale = 1 / 6;
 				fluidIterations = 12;
-				offScreenScale = 1/2;
+				offScreenScale = 1 / 2;
 				offScreenFilter = GL.NEAREST;
 			case iOS:
 				particleCount = 1 << 14;
-				fluidScale = 1/10;
+				fluidScale = 1 / 10;
 				fluidIterations = 6;
-				offScreenScale = 1/2;
+				offScreenScale = 1 / 2;
 				offScreenFilter = GL.LINEAR;
 		}
 		return simulationQuality = quality;
 	}
 
-	function set_fluidIterations(v:Int):Int{
+	function set_fluidIterations(v:Int):Int {
 		fluidIterations = v;
-		if(fluid != null) fluid.solverIterations = v;
+		if (fluid != null)
+			fluid.solverIterations = v;
 		return v;
 	}
 
 	var qualityDirection:Int = 0;
-	function lowerQualityRequired(magnitude:Float){
-		if(qualityDirection>0)return;
+
+	function lowerQualityRequired(magnitude:Float) {
+		if (qualityDirection > 0)
+			return;
 		qualityDirection = -1;
 		var qualityIndex = Type.enumIndex(this.simulationQuality);
 		var maxIndex = Type.allEnums(SimulationQuality).length - 1;
-		if(qualityIndex >= maxIndex)return;
+		if (qualityIndex >= maxIndex)
+			return;
 
-		if(magnitude < 0.5) qualityIndex +=1;
-		else                qualityIndex +=2;
+		if (magnitude < 0.5)
+			qualityIndex += 1;
+		else
+			qualityIndex += 2;
 
-		if(qualityIndex > maxIndex)qualityIndex = maxIndex;
+		if (qualityIndex > maxIndex)
+			qualityIndex = maxIndex;
 
 		var newQuality = Type.createEnumIndex(SimulationQuality, qualityIndex);
 		this.simulationQuality = newQuality;
 		updateSimulationTextures();
 	}
 
-	//!# Requires better upsampling before use!
-	function higherQualityRequired(magnitude:Float){
-		if(qualityDirection<0)return;
+	// !# Requires better upsampling before use!
+	function higherQualityRequired(magnitude:Float) {
+		if (qualityDirection < 0)
+			return;
 		qualityDirection = 1;
 
 		var qualityIndex = Type.enumIndex(this.simulationQuality);
 		var minIndex = 0;
-		if(qualityIndex <= minIndex)return;
+		if (qualityIndex <= minIndex)
+			return;
 
-		if(magnitude < 0.5) qualityIndex -=1;
-		else                qualityIndex -=2;
+		if (magnitude < 0.5)
+			qualityIndex -= 1;
+		else
+			qualityIndex -= 2;
 
-		if(qualityIndex < minIndex)qualityIndex = minIndex;
+		if (qualityIndex < minIndex)
+			qualityIndex = minIndex;
 
 		var newQuality = Type.createEnumIndex(SimulationQuality, qualityIndex);
-		trace('Raising quality to: '+newQuality);
+		trace('Raising quality to: ' + newQuality);
 		this.simulationQuality = newQuality;
 		updateSimulationTextures();
 	}
 
-
 	//---- Interface ----//
-
-	function reset():Void{
-		particles.reset();	
+	function reset():Void {
+		particles.reset();
 		fluid.clear();
 	}
 
-	//coordinate conversion
-	inline function windowToClipSpaceX(x:Float) return (x/app.runtime.window_width())*2 - 1;
-	inline function windowToClipSpaceY(y:Float) return ((app.runtime.window_height()-y)/app.runtime.window_height())*2 - 1;
+	// coordinate conversion
+	inline function windowToClipSpaceX(x:Float)
+		return (x / app.runtime.window_width()) * 2 - 1;
 
-	override function onmousedown( x : Float , y : Float , button : Int, _, _){
-		this.isMouseDown = true; 
+	inline function windowToClipSpaceY(y:Float)
+		return ((app.runtime.window_height() - y) / app.runtime.window_height()) * 2 - 1;
+
+	override function onmousedown(x:Float, y:Float, button:Int, _, _) {
+		this.isMouseDown = true;
 	}
-	override function onmouseup( x : Float , y : Float , button : Int, _, _){
+
+	override function onmouseup(x:Float, y:Float, button:Int, _, _) {
 		this.isMouseDown = false;
 	}
 
-	override function onmousemove( x : Float , y : Float , xrel:Int, yrel:Int, _, _) {
+	override function onmousemove(x:Float, y:Float, xrel:Int, yrel:Int, _, _) {
 		mouse.set(x, y);
-		mouseFluid.set(
-			fluid.clipToAspectSpaceX(windowToClipSpaceX(x)),
-			fluid.clipToAspectSpaceY(windowToClipSpaceY(y))
-		);
+		mouseFluid.set(fluid.clipToAspectSpaceX(windowToClipSpaceX(x)), fluid.clipToAspectSpaceY(windowToClipSpaceY(y)));
 		mousePointKnown = true;
 	}
 
-	inline function updateLastMouse(){
+	inline function updateLastMouse() {
 		lastMouse.set(mouse.x, mouse.y);
-		lastMouseFluid.set(
-			fluid.clipToAspectSpaceX(windowToClipSpaceX(mouse.x)),
-			fluid.clipToAspectSpaceY(windowToClipSpaceY(mouse.y))
-		);
+		lastMouseFluid.set(fluid.clipToAspectSpaceX(windowToClipSpaceX(mouse.x)), fluid.clipToAspectSpaceY(windowToClipSpaceY(mouse.y)));
 		lastMousePointKnown = true && mousePointKnown;
 	}
 
 	// override function ontouchdown(x:Float,y:Float,touch_id:Int,_){
 	// 	updateTouchCoordinate(x,y);
 	// 	updateLastMouse();
-	// 	this.isMouseDown = true; 
+	// 	this.isMouseDown = true;
 	// }
-
 	// override function ontouchup(x:Float,y:Float,touch_id:Int,_){
 	// 	updateTouchCoordinate(x,y);
 	// 	this.isMouseDown = false;
 	// }
-
 	// override function ontouchmove(x:Float,y:Float,dx:Float,dy:Float,touch_id:Int,_){
 	// 	updateTouchCoordinate(x,y);
 	// }
-
-
 	// function updateTouchCoordinate(x:Float, y:Float){
 	// 	x = x*app.runtime.window_width();
 	// 	y = y*app.runtime.window_height();
@@ -423,39 +451,40 @@ class Main extends snow.App{
 	// 	);
 	// 	mousePointKnown = true;
 	// }
-
-
 	var lshiftDown = false;
 	var rshiftDown = false;
-	override function onkeydown( keyCode : Int, _, _, _, _, _){
+
+	override function onkeydown(keyCode:Int, _, _, _, _, _) {
 		switch (keyCode) {
-			case Key.lshift: 
+			case Key.lshift:
 				lshiftDown = true;
-			case Key.rshift: 
+			case Key.rshift:
 				rshiftDown = true;
 		}
 	}
-	
-	override function onkeyup( keyCode : Int , _, _, _, _, _){
+
+	override function onkeyup(keyCode:Int, _, _, _, _, _) {
 		switch (keyCode) {
 			case Key.key_r:
-				if(lshiftDown || rshiftDown) particles.reset();
-				else reset();
+				if (lshiftDown || rshiftDown)
+					particles.reset();
+				else
+					reset();
 			case Key.key_p:
 				renderParticlesEnabled = !renderParticlesEnabled;
 			case Key.key_d:
 				renderFluidEnabled = !renderFluidEnabled;
 			case Key.key_s:
 				fluid.clear();
-			case Key.lshift: 
+			case Key.lshift:
 				lshiftDown = false;
-			case Key.rshift: 
+			case Key.rshift:
 				rshiftDown = false;
 		}
 	}
 }
 
-enum SimulationQuality{
+enum SimulationQuality {
 	UltraHigh;
 	High;
 	Medium;
@@ -464,12 +493,12 @@ enum SimulationQuality{
 	iOS;
 }
 
-
 @:vert('#pragma include("src/shaders/glsl/no-transform.vert")')
 @:frag('#pragma include("src/shaders/glsl/quad-texture.frag")')
 class ScreenTexture extends ShaderBase {}
 
-@:vert('
+@:vert(
+	'
 	const float POINT_SIZE = 1.0;
 	void main(){
 		vec2 p = texture2D(particleData, particleUV).xy;
@@ -485,9 +514,10 @@ class ScreenTexture extends ShaderBase {}
 		color.a = 1.0;
 	}
 ')
-class ColorParticleMotion extends GPUParticles.RenderParticles{}
+class ColorParticleMotion extends GPUParticles.RenderParticles {}
 
-@:frag('
+@:frag(
+	'
 	#pragma include("src/shaders/glsl/geom.glsl")
 	uniform bool isMouseDown;
 	uniform vec2 mouse; //aspect space coordinates
@@ -501,6 +531,8 @@ class ColorParticleMotion extends GPUParticles.RenderParticles{}
 	uniform vec2 mouse2;
 	uniform vec2 lastMouse2;
 	uniform bool isMouseDown2;
+
+	uniform int which;
 
 	void main(){
 		vec4 color = texture2D(dye, texelCoord);
@@ -529,9 +561,10 @@ class ColorParticleMotion extends GPUParticles.RenderParticles{}
 		gl_FragColor = color;
 	}
 ')
-class MouseDye extends GPUFluid.UpdateDye{}
+class MouseDye extends GPUFluid.UpdateDye {}
 
-@:frag('
+@:frag(
+	'
 	#pragma include("src/shaders/glsl/geom.glsl")
 	uniform bool isMouseDown;
 	uniform vec2 mouse; //aspect space coordinates
@@ -544,6 +577,8 @@ class MouseDye extends GPUFluid.UpdateDye{}
 	uniform vec2 mouse2;
 	uniform vec2 lastMouse2;
 	uniform bool isMouseDown2;
+
+	uniform int which;
 
 	uniform float drag;
 
@@ -567,4 +602,4 @@ class MouseDye extends GPUFluid.UpdateDye{}
 		gl_FragColor = vec4(v, 0, 1.);
 	}
 ')
-class MouseForce extends GPUFluid.ApplyForces{}
+class MouseForce extends GPUFluid.ApplyForces {}
