@@ -13,7 +13,8 @@
       codepaths: ['src']
     },
 
-    build : {      
+    build : {    
+      flags: ["-D shallow-expose"],  
       dependencies : {
         snow : '*',
         shaderblox : '*',

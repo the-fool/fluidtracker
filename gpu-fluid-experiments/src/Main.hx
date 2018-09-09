@@ -11,6 +11,7 @@ import shaderblox.uniforms.UVec2.Vector2;
 
 typedef UserConfig = {}
 
+@:expose
 class Main extends snow.App{
 	var h:String = untyped window.hello;
 	// var gl = GL;
@@ -28,7 +29,16 @@ class Main extends snow.App{
 	var renderParticlesShader : ColorParticleMotion;
 	var updateDyeShader       : MouseDye;
 	var mouseForceShader      : MouseForce;
+
 	//Window
+	var isMouseDownV = [false, false];
+	var lastMousePointKnownV = [false, false];
+	var mousePointKnownV = [false, false];	
+	var mouseV = [new Vector2(), new Vector2()];
+	var mouseFluidV = [new Vector2(), new Vector2()];
+	var lastMouseV = [new Vector2(), new Vector2()];
+	var lastMouseFluidV = [new Vector2(), new Vector2()];
+
 	var isMouseDown:Bool = false;
 	var mousePointKnown:Bool = false;
 	var lastMousePointKnown:Bool = false;
@@ -36,9 +46,12 @@ class Main extends snow.App{
 	var mouseFluid = new Vector2();
 	var lastMouse = new Vector2();
 	var lastMouseFluid = new Vector2();
+
 	var time:Float;
 	var lastTime:Float;
+
 	//Drawing
+	var drag = 0.025;
 	var renderParticlesEnabled:Bool = true;
 	var renderFluidEnabled:Bool = true;
 	//
@@ -86,6 +99,7 @@ class Main extends snow.App{
 		}
 		#end
 	}
+
 
 	override function config( config:AppConfig ) : AppConfig {
 		
@@ -143,10 +157,13 @@ class Main extends snow.App{
 		updateDyeShader = new MouseDye();
 		mouseForceShader = new MouseForce();
 
-		updateDyeShader.mouse.data = mouseFluid;
+		updateDyeShader.mouse.data = mouseFluid; 
 		updateDyeShader.lastMouse.data = lastMouseFluid;
+		updateDyeShader.drag.data = drag;
+
 		mouseForceShader.mouse.data = mouseFluid;
 		mouseForceShader.lastMouse.data = lastMouseFluid;
+		mouseForceShader.drag.data = drag;
 
 		var cellScale = 32;
 		fluid = new GPUFluid(Math.round(app.runtime.window_width()*fluidScale), Math.round(app.runtime.window_height()*fluidScale), cellScale, fluidIterations);
@@ -173,6 +190,10 @@ class Main extends snow.App{
 		updateDyeShader.isMouseDown.set(isMouseDown && lastMousePointKnown);
 		mouseForceShader.isMouseDown.set(isMouseDown && lastMousePointKnown);
 
+		var _drag = untyped window.drag;
+		if (_drag != drag) {
+			updateDyeShader.drag.set(_drag);
+		}
 		//step physics
 		fluid.step(dt);
 
@@ -471,6 +492,16 @@ class ColorParticleMotion extends GPUParticles.RenderParticles{}
 	uniform bool isMouseDown;
 	uniform vec2 mouse; //aspect space coordinates
 	uniform vec2 lastMouse;
+	uniform float drag;
+	
+	uniform vec2 mouse1;
+	uniform vec2 lastMouse1;
+	uniform bool isMouseDown1;
+
+	uniform vec2 mouse2;
+	uniform vec2 lastMouse2;
+	uniform bool isMouseDown2;
+
 	void main(){
 		vec4 color = texture2D(dye, texelCoord);
 		color.r *= (0.9797);
@@ -485,8 +516,7 @@ class ColorParticleMotion extends GPUParticles.RenderParticles{}
 			float l = distanceToSegment(mouse, lastMouse, p, projection);
 			float taperFactor = 0.6;
 			float projectedFraction = 1.0 - clamp(projection, 0.0, 1.0)*taperFactor;
-			float R = 0.025;
-			float m = exp(-l/R);
+			float m = exp(-l/drag);
 			
 			float speed = length(mouseVelocity);
 			float x = clamp((speed * speed * 0.02 - l * 5.0) * projectedFraction, 0., 1.);
@@ -506,6 +536,17 @@ class MouseDye extends GPUFluid.UpdateDye{}
 	uniform bool isMouseDown;
 	uniform vec2 mouse; //aspect space coordinates
 	uniform vec2 lastMouse;
+
+	uniform vec2 mouse1;
+	uniform vec2 lastMouse1;
+	uniform bool isMouseDown1;
+
+	uniform vec2 mouse2;
+	uniform vec2 lastMouse2;
+	uniform bool isMouseDown2;
+
+	uniform float drag;
+
 	void main(){
 		vec2 v = texture2D(velocity, texelCoord).xy;
 		v.xy *= 0.999;
@@ -518,8 +559,7 @@ class MouseDye extends GPUFluid.UpdateDye{}
 			float l = distanceToSegment(mouse, lastMouse, p, projection);
 			float taperFactor = 0.6;//1 => 0 at lastMouse, 0 => no tapering
 			float projectedFraction = 1.0 - clamp(projection, 0.0, 1.0)*taperFactor;
-			float R = 0.015;
-			float m = exp(-l/R); //drag coefficient
+			float m = exp(-l/drag); //drag coefficient
 			m *= projectedFraction * projectedFraction;
 			vec2 targetVelocity = mouseVelocity * dx * 1.4;
 			v += (targetVelocity - v)*m;
