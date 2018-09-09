@@ -36,14 +36,12 @@ window.addEventListener('load', function () {
     });
 
     tracker.on('track', function (event) {
-        if (event.data.length)
-        console.log(event.data);
         event.data.sort((a, b) => a.x - b.x);
         window.trackEvents.forEach((e, i) => {
             const d = event.data[i];
             if (d) {
-                const x = windowX - (d.x / 600 * windowX);
-                const y = d.y / 450 * windowY;
+                const x = windowX - (d.x / 300 * windowX);
+                const y = d.y / 200 * windowY;
                 e.x = x;
                 e.y = y;
                 e.retries = 100;

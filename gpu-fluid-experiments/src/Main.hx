@@ -143,17 +143,12 @@ class Main extends snow.App {
 		updateDyeShader = new MouseDye();
 		mouseForceShader = new MouseForce();
 
-		updateDyeShader.mouse.data = mouseFluid;
-		updateDyeShader.lastMouse.data = lastMouseFluid;
-
 		updateDyeShader.mouse1.data = mouseFluidV[0];
 		updateDyeShader.lastMouse1.data = lastMouseFluidV[0];
 		updateDyeShader.mouse2.data = mouseFluidV[1];
 		updateDyeShader.lastMouse2.data = lastMouseFluidV[1];
 		updateDyeShader.drag.data = drag;
 
-		mouseForceShader.mouse.data = mouseFluid;
-		mouseForceShader.lastMouse.data = lastMouseFluid;
 		mouseForceShader.mouse1.data = mouseFluidV[0];
 		mouseForceShader.lastMouse1.data = lastMouseFluidV[0];
 		mouseForceShader.mouse2.data = mouseFluidV[1];
@@ -192,11 +187,16 @@ class Main extends snow.App {
 			updateDyeShader.which.set(i);
 			mouseForceShader.which.set(i);
 			isActive = events[i].x != null;
-			mousePointKnownV[i] = isActive;
 			x = events[i].x;
 			y = events[i].y;
-			mouseFluidV[i].set(fluid.clipToAspectSpaceX(windowToClipSpaceX(x)), fluid.clipToAspectSpaceY(windowToClipSpaceY(y)));
-			mouseV[i].set(x, y);
+
+			if (isActive) {
+				js.Browser.console.log(x, y);
+				mouseFluidV[i].set(fluid.clipToAspectSpaceX(windowToClipSpaceX(x)), fluid.clipToAspectSpaceY(windowToClipSpaceY(y)));
+				mouseV[i].set(x, y);
+			}
+
+			mousePointKnownV[i] = isActive;
 			if (i == 0) {
 				updateDyeShader.isMouseDown1.set(isActive);
 				mouseForceShader.isMouseDown1.set(isActive);
@@ -204,20 +204,33 @@ class Main extends snow.App {
 				updateDyeShader.isMouseDown2.set(isActive);
 				mouseForceShader.isMouseDown2.set(isActive);
 			}
+
+			fluid.step(dt);
+
+			particles.flowVelocityField = fluid.velocityRenderTarget.readFromTexture;
+			if (renderParticlesEnabled)
+				particles.step(dt);
+			if (isActive) {
+				lastMouseV[i].set(x, y);
+				lastMouseFluidV[i].set(fluid.clipToAspectSpaceX(windowToClipSpaceX(x)), fluid.clipToAspectSpaceY(windowToClipSpaceY(y)));
+				lastMousePointKnownV[i] = true && mousePointKnownV[i];
+			}
 		}
 		// Physics
 		// interaction
-		updateDyeShader.isMouseDown.set(isMouseDown && lastMousePointKnown);
-		mouseForceShader.isMouseDown.set(isMouseDown && lastMousePointKnown);
+		/*
+			updateDyeShader.isMouseDown.set(isMouseDown && lastMousePointKnown);
+			mouseForceShader.isMouseDown.set(isMouseDown && lastMousePointKnown);
 
-		// step physics
-		fluid.step(dt);
+			// step physics
+			fluid.step(dt);
 
-		particles.flowVelocityField = fluid.velocityRenderTarget.readFromTexture;
-		if (renderParticlesEnabled)
-			particles.step(dt);
+			particles.flowVelocityField = fluid.velocityRenderTarget.readFromTexture;
+			if (renderParticlesEnabled)
+				particles.step(dt);
 
-		updateLastMouse();
+			updateLastMouse();
+		 */
 	}
 
 	override function tick(delta:Float):Void {
@@ -409,16 +422,18 @@ class Main extends snow.App {
 	inline function windowToClipSpaceY(y:Float)
 		return ((app.runtime.window_height() - y) / app.runtime.window_height()) * 2 - 1;
 
-	override function onmousedown(x:Float, y:Float, button:Int, _, _) {
-		this.isMouseDown = true;
-	}
+	/*
+		override function onmousedown(x:Float, y:Float, button:Int, _, _) {
+			this.isMouseDown = true;
+		}
 
-	override function onmouseup(x:Float, y:Float, button:Int, _, _) {
-		this.isMouseDown = false;
-	}
-
+		override function onmouseup(x:Float, y:Float, button:Int, _, _) {
+			this.isMouseDown = false;
+		}
+	 */
 	override function onmousemove(x:Float, y:Float, xrel:Int, yrel:Int, _, _) {
 		mouse.set(x, y);
+
 		mouseFluid.set(fluid.clipToAspectSpaceX(windowToClipSpaceX(x)), fluid.clipToAspectSpaceY(windowToClipSpaceY(y)));
 		mousePointKnown = true;
 	}
@@ -519,9 +534,6 @@ class ColorParticleMotion extends GPUParticles.RenderParticles {}
 @:frag(
 	'
 	#pragma include("src/shaders/glsl/geom.glsl")
-	uniform bool isMouseDown;
-	uniform vec2 mouse; //aspect space coordinates
-	uniform vec2 lastMouse;
 	uniform float drag;
 	
 	uniform vec2 mouse1;
@@ -535,14 +547,29 @@ class ColorParticleMotion extends GPUParticles.RenderParticles {}
 	uniform int which;
 
 	void main(){
+		bool isMouseDown;
+		vec2 mouse; //aspect space coordinates
+		vec2 lastMouse;
+		vec2 mouseVelocity;
 		vec4 color = texture2D(dye, texelCoord);
 		color.r *= (0.9797);
 		color.g *= (0.9494);
 		color.b *= (0.9696);
 
+		if (which == 0) {
+			isMouseDown = isMouseDown1;
+			mouse = mouse1;
+			lastMouse = lastMouse1;
+		} else if (which == 1) {
+			isMouseDown = isMouseDown2;
+			mouse = mouse2;
+			lastMouse = lastMouse2;
+		} else {
+			isMouseDown = false;
+		}
+
 		if(isMouseDown){			
-			vec2 mouseVelocity = (mouse - lastMouse)/dt;
-			
+			mouseVelocity = (mouse - lastMouse)/dt;
 			//compute tapered distance to mouse line segment
 			float projection;
 			float l = distanceToSegment(mouse, lastMouse, p, projection);
@@ -566,9 +593,6 @@ class MouseDye extends GPUFluid.UpdateDye {}
 @:frag(
 	'
 	#pragma include("src/shaders/glsl/geom.glsl")
-	uniform bool isMouseDown;
-	uniform vec2 mouse; //aspect space coordinates
-	uniform vec2 lastMouse;
 
 	uniform vec2 mouse1;
 	uniform vec2 lastMouse1;
@@ -583,10 +607,28 @@ class MouseDye extends GPUFluid.UpdateDye {}
 	uniform float drag;
 
 	void main(){
+		bool isMouseDown;
+		vec2 mouse; //aspect space coordinates
+		vec2 lastMouse;
+		vec2 mouseVelocity;
+
 		vec2 v = texture2D(velocity, texelCoord).xy;
 		v.xy *= 0.999;
+
+		if (which == 0) {
+			isMouseDown = isMouseDown1;
+			mouse = mouse1;
+			lastMouse = lastMouse1;
+		} else if (which == 1) {
+			isMouseDown = isMouseDown2;
+			mouse = mouse2;
+			lastMouse = lastMouse2;
+		} else {
+			isMouseDown = false;
+		}
+		
 		if(isMouseDown){
-			vec2 mouseVelocity = -(lastMouse - mouse)/dt;
+			mouseVelocity = -(lastMouse - mouse)/dt;
 			// mouse = mouse - (lastMouse - mouse) * 2.0;//predict mouse position
 				
 			//compute tapered distance to mouse line segment
