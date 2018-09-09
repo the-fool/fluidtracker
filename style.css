@@ -29,8 +29,6 @@ body {
 .demo-frame {
   width: 854px;
   height: 658px;
-  margin: -329px 0 0 -429px;
-  padding: 95px 20px 45px 34px;
   overflow: hidden;
   box-sizing: border-box;
 }

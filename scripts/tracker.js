@@ -29,15 +29,15 @@ function sortXYlocs(data) {
 }
 
 window.addEventListener('load', function () {
-    var video = document.getElementById('video');
-
     var tracker = new tracking.ColorTracker();
-    tracker.setColors(['magenta']);
+    tracker.setColors(['magenta', 'yellow', 'cyan']);
     tracking.track('#video', tracker, {
         camera: true
     });
 
     tracker.on('track', function (event) {
+        if (event.data.length)
+        console.log(event.data);
         event.data.sort((a, b) => a.x - b.x);
         window.trackEvents.forEach((e, i) => {
             const d = event.data[i];
