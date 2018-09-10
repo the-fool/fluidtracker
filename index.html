@@ -31,9 +31,9 @@
   </div>
 
 
-  <div class="demo-frame">
+  <div class="demo-frame" style="position: absolute; top: 0">
     <div class="demo-container">
-      <video id="video" width="600" height="450" preload autoplay loop muted controls></video>
+      <video id="video" width="300" height="200" preload autoplay loop muted controls></video>
     </div>
   </div>
 
@@ -62,8 +62,8 @@
         window.trackEvents.forEach((e, i) => {
           const d = event.data[i];
           if (d) {
-            const x = windowX - (d.x / 600 * windowX);
-            const y = d.y / 450 * windowY;
+            const x = windowX - (d.x / 300 * windowX);
+            const y = d.y / 200 * windowY;
             e.x = x;
             e.y = y;
             e.retries = 100;

@@ -175,47 +175,6 @@ class Main extends snow.App {
 	}
 
 	override function update(dt:Float) {
-		dt = 0.016; // @!
-		var _drag = untyped window.drag;
-		var isActive = false;
-		var x;
-		var y;
-		if (_drag != drag) {
-			updateDyeShader.drag.set(_drag);
-		}
-		for (i in 0...2) {
-			updateDyeShader.which.set(i);
-			mouseForceShader.which.set(i);
-			isActive = events[i].x != null;
-			x = events[i].x;
-			y = events[i].y;
-
-			if (isActive) {
-				js.Browser.console.log(x, y);
-				mouseFluidV[i].set(fluid.clipToAspectSpaceX(windowToClipSpaceX(x)), fluid.clipToAspectSpaceY(windowToClipSpaceY(y)));
-				mouseV[i].set(x, y);
-			}
-
-			mousePointKnownV[i] = isActive;
-			if (i == 0) {
-				updateDyeShader.isMouseDown1.set(isActive);
-				mouseForceShader.isMouseDown1.set(isActive);
-			} else if (i == 1) {
-				updateDyeShader.isMouseDown2.set(isActive);
-				mouseForceShader.isMouseDown2.set(isActive);
-			}
-
-			fluid.step(dt);
-
-			particles.flowVelocityField = fluid.velocityRenderTarget.readFromTexture;
-			if (renderParticlesEnabled)
-				particles.step(dt);
-			if (isActive) {
-				lastMouseV[i].set(x, y);
-				lastMouseFluidV[i].set(fluid.clipToAspectSpaceX(windowToClipSpaceX(x)), fluid.clipToAspectSpaceY(windowToClipSpaceY(y)));
-				lastMousePointKnownV[i] = true && mousePointKnownV[i];
-			}
-		}
 		// Physics
 		// interaction
 		/*
@@ -240,6 +199,48 @@ class Main extends snow.App {
 
 		// Render
 		// render to offScreen
+
+		var dt = 0.016; // @!
+		var _drag = untyped window.drag;
+		var isActive = false;
+		var x;
+		var y;
+		if (_drag != drag) {
+			updateDyeShader.drag.set(_drag);
+		}
+		for (i in 0...2) {
+			updateDyeShader.which.set(i);
+			mouseForceShader.which.set(i);
+			isActive = events[i].x != null;
+			x = events[i].x;
+			y = events[i].y;
+
+			if (isActive) {
+				mouseFluidV[i].set(fluid.clipToAspectSpaceX(windowToClipSpaceX(x)), fluid.clipToAspectSpaceY(windowToClipSpaceY(y)));
+				mouseV[i].set(x, y);
+			}
+
+			mousePointKnownV[i] = isActive;
+			if (i == 0) {
+				updateDyeShader.isMouseDown1.set(isActive);
+				mouseForceShader.isMouseDown1.set(isActive);
+			} else if (i == 1) {
+				updateDyeShader.isMouseDown2.set(isActive);
+				mouseForceShader.isMouseDown2.set(isActive);
+			}
+
+			fluid.step(dt);
+
+			particles.flowVelocityField = fluid.velocityRenderTarget.readFromTexture;
+			if (renderParticlesEnabled) {
+				particles.step(dt);
+			}
+			if (isActive) {
+				lastMouseV[i].set(x, y);
+				lastMouseFluidV[i].set(fluid.clipToAspectSpaceX(windowToClipSpaceX(x)), fluid.clipToAspectSpaceY(windowToClipSpaceY(y)));
+				lastMousePointKnownV[i] = true && mousePointKnownV[i];
+			}
+		}
 		if (OFFSCREEN_RENDER) {
 			GL.viewport(0, 0, offScreenTarget.width, offScreenTarget.height);
 			GL.bindFramebuffer(GL.FRAMEBUFFER, offScreenTarget.frameBufferObject);
