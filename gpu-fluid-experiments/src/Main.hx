@@ -29,13 +29,13 @@ class Main extends snow.App {
 	var updateDyeShader:MouseDye;
 	var mouseForceShader:MouseForce;
 	// Window
-	var isMouseDownV = [false, false];
-	var mousePointKnownV = [false, false];
-	var lastMousePointKnownV = [false, false];
-	var mouseV = [new Vector2(), new Vector2()];
-	var mouseFluidV = [new Vector2(), new Vector2()];
-	var lastMouseV = [new Vector2(), new Vector2()];
-	var lastMouseFluidV = [new Vector2(), new Vector2()];
+	var isMouseDownV = [false, false, false];
+	var mousePointKnownV = [false, false, false];
+	var lastMousePointKnownV = [false, false, false];
+	var mouseV = [new Vector2(), new Vector2(), new Vector2()];
+	var mouseFluidV = [new Vector2(), new Vector2(), new Vector2()];
+	var lastMouseV = [new Vector2(), new Vector2(), new Vector2()];
+	var lastMouseFluidV = [new Vector2(), new Vector2(), new Vector2()];
 	var isMouseDown:Bool = false;
 	var mousePointKnown:Bool = false;
 	var lastMousePointKnown:Bool = false;
@@ -208,7 +208,7 @@ class Main extends snow.App {
 		if (_drag != drag) {
 			updateDyeShader.drag.set(_drag);
 		}
-		for (i in 0...2) {
+		for (i in 0...3) {
 			updateDyeShader.which.set(i);
 			mouseForceShader.which.set(i);
 			isActive = events[i].x != null;
@@ -545,6 +545,10 @@ class ColorParticleMotion extends GPUParticles.RenderParticles {}
 	uniform vec2 lastMouse2;
 	uniform bool isMouseDown2;
 
+	uniform vec2 mouse3;
+	uniform vec2 lastMouse3;
+	uniform bool isMouseDown3;
+
 	uniform int which;
 
 	void main(){
@@ -565,6 +569,10 @@ class ColorParticleMotion extends GPUParticles.RenderParticles {}
 			isMouseDown = isMouseDown2;
 			mouse = mouse2;
 			lastMouse = lastMouse2;
+		} else if (which == 2) {
+			isMouseDown = isMouseDown3;
+			mouse = mouse3;
+			lastMouse = lastMouse3;
 		} else {
 			isMouseDown = false;
 		}
@@ -603,6 +611,10 @@ class MouseDye extends GPUFluid.UpdateDye {}
 	uniform vec2 lastMouse2;
 	uniform bool isMouseDown2;
 
+	uniform vec2 mouse3;
+	uniform vec2 lastMouse3;
+	uniform bool isMouseDown3;
+
 	uniform int which;
 
 	uniform float drag;
@@ -624,6 +636,10 @@ class MouseDye extends GPUFluid.UpdateDye {}
 			isMouseDown = isMouseDown2;
 			mouse = mouse2;
 			lastMouse = lastMouse2;
+		} else if (which == 2) {
+			isMouseDown = isMouseDown3;
+			mouse = mouse3;
+			lastMouse = lastMouse3;
 		} else {
 			isMouseDown = false;
 		}

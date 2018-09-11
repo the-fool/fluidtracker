@@ -1,5 +1,6 @@
 let windowX = window.innerWidth;
 let windowY = window.innerWidth;
+window.trackEvents = [{}, {}, {}];
 
 window.addEventListener('resize', function () {
     windowX = window.innerWidth;
@@ -11,15 +12,17 @@ function distance(i, j) {
 }
 
 function sortXYlocs(data) {
+    const getIndex = newDatum => window.event
+        .map((oldDatum, originalIndex) => ({
+            distance: distance(oldDatum, newDatum),
+            originalIndex
+        }))
+        .sort((a, b) => a.distance - b.distance)[0]
+        .index;
     const distanced = data
         .map(datum => ({
             datum,
-            index: window.event
-                .map((oldDatum, index) => ({
-                        distance: distance(oldDatum, datum),
-                        index
-                    })
-                    .sort((a, b) => a.distance - b.distance)[0].index)
+            index: getIndex(datum)
         }));
 
     distanced.forEach(({
@@ -30,13 +33,16 @@ function sortXYlocs(data) {
 
 window.addEventListener('load', function () {
     var tracker = new tracking.ColorTracker();
-    tracker.setColors(['magenta', 'yellow', 'cyan']);
+    tracker.setColors(['magenta']);
     tracking.track('#video', tracker, {
         camera: true
     });
 
     tracker.on('track', function (event) {
         event.data.sort((a, b) => a.x - b.x);
+        if (event.data.length) {
+            console.log(event.data);
+        }
         window.trackEvents.forEach((e, i) => {
             const d = event.data[i];
             if (d) {
