@@ -6,8 +6,12 @@ window.addEventListener('resize', function () {
     windowX = window.innerWidth;
     windowY = window.innerWidth;
 });
-
+/*
 function distance(i, j) {
+    if (!i.x) {
+        // old event is non-existent!
+        return 0;
+    }
     return Math.sqrt((i.x - j.x) ** 2 + (i.y - j.y) ** 2);
 }
 
@@ -19,6 +23,7 @@ function sortXYlocs(data) {
         }))
         .sort((a, b) => a.distance - b.distance)[0]
         .index;
+
     const distanced = data
         .map(datum => ({
             datum,
@@ -30,6 +35,7 @@ function sortXYlocs(data) {
         index
     }) => window.event[index] = datum);
 }
+*/
 
 window.addEventListener('load', function () {
     var tracker = new tracking.ColorTracker();
@@ -40,9 +46,6 @@ window.addEventListener('load', function () {
 
     tracker.on('track', function (event) {
         event.data.sort((a, b) => a.x - b.x);
-        if (event.data.length) {
-            console.log(event.data);
-        }
         window.trackEvents.forEach((e, i) => {
             const d = event.data[i];
             if (d) {
@@ -50,7 +53,7 @@ window.addEventListener('load', function () {
                 const y = d.y / 200 * windowY;
                 e.x = x;
                 e.y = y;
-                e.retries = 100;
+                e.retries = 200;
             } else {
                 if (e.retries !== undefined && e.retries > 0) {
                     e.retries--;
