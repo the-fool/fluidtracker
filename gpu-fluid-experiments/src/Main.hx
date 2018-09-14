@@ -206,6 +206,7 @@ class Main extends snow.App {
 		var x;
 		var y;
 		if (_drag != drag) {
+			drag = _drag;
 			updateDyeShader.drag.set(_drag);
 		}
 		for (i in 0...3) {
@@ -241,6 +242,7 @@ class Main extends snow.App {
 				lastMousePointKnownV[i] = true && mousePointKnownV[i];
 			}
 		}
+
 		if (OFFSCREEN_RENDER) {
 			GL.viewport(0, 0, offScreenTarget.width, offScreenTarget.height);
 			GL.bindFramebuffer(GL.FRAMEBUFFER, offScreenTarget.frameBufferObject);
