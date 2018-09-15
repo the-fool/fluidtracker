@@ -124,6 +124,8 @@ function pointerPrototype() {
 
 pointers.push(new pointerPrototype());
 pointers.push(new pointerPrototype());
+pointers.push(new pointerPrototype());
+pointers.push(new pointerPrototype());
 
 class GLProgram {
     constructor(vertexShader, fragmentShader) {
@@ -500,7 +502,7 @@ update();
 
 function update() {
     resizeCanvas();
-
+    gatherEvents();
     const dt = Math.min((Date.now() - lastTime) / 1000, 0.016);
     lastTime = Date.now();
 
@@ -622,69 +624,35 @@ function resizeCanvas() {
     }
 }
 
+function gatherEvents() {
+    window.trackEvents.forEach((trackEvent, i) => {
+        const p = pointers[i];
+        if (!trackEvent.x || Math.abs(trackEvent.x - p.x) < 5 || Math.abs(trackEvent.y - p.y) < 5) {
+            p.moved = false;
+            return;
+        }
+        p.moved = true;
+        p.dx = (trackEvent.x - p.x) * 10;
+        p.dy = (trackEvent.y - p.y) * 10;
+        p.x = trackEvent.x;
+        p.y = trackEvent.y;
+    });
+}
+
+
 canvas.addEventListener('mousemove', (e) => {
-    pointers[0].moved = pointers[0].down;
-    pointers[0].dx = (e.offsetX - pointers[0].x) * 10.0;
-    pointers[0].dy = (e.offsetY - pointers[0].y) * 10.0;
-    pointers[0].x = e.offsetX;
-    pointers[0].y = e.offsetY;
-
-
-    let x = e.offsetX + 200;
-    let y = e.offsetY + 200;
-    pointers[1].moved = pointers[1].down;
-    pointers[1].dx = (x - pointers[1].x) * 10.0;
-    pointers[1].dy = (y - pointers[1].y) * 10.0;
-    pointers[1].x = x;
-    pointers[1].y = y;
+    pointers[3].moved = pointers[3].down;
+    pointers[3].dx = (e.offsetX - pointers[3].x) * 10.0;
+    pointers[3].dy = (e.offsetY - pointers[3].y) * 10.0;
+    pointers[3].x = e.offsetX;
+    pointers[3].y = e.offsetY;
 });
-
-canvas.addEventListener('touchmove', (e) => {
-    e.preventDefault();
-    const touches = e.targetTouches;
-    for (let i = 0; i < touches.length; i++) {
-        let pointer = pointers[i];
-        pointer.moved = pointer.down;
-        pointer.dx = (touches[i].pageX - pointer.x) * 10.0;
-        pointer.dy = (touches[i].pageY - pointer.y) * 10.0;
-        pointer.x = touches[i].pageX;
-        pointer.y = touches[i].pageY;
-    }
-}, false);
 
 canvas.addEventListener('mousedown', () => {
-    pointers[0].down = true;
-    pointers[0].color = [Math.random() + 0.2, Math.random() + 0.2, Math.random() + 0.2];
-
-
-    pointers[1].down = true;
-    pointers[1].color = [Math.random() + 0.2, Math.random() + 0.2, Math.random() + 0.2];
-});
-
-canvas.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    const touches = e.targetTouches;
-    for (let i = 0; i < touches.length; i++) {
-        if (i >= pointers.length)
-            pointers.push(new pointerPrototype());
-
-        pointers[i].id = touches[i].identifier;
-        pointers[i].down = true;
-        pointers[i].x = touches[i].pageX;
-        pointers[i].y = touches[i].pageY;
-        pointers[i].color = [Math.random() + 0.2, Math.random() + 0.2, Math.random() + 0.2];
-    }
+    pointers[3].down = true;
+    pointers[3].color = [Math.random() + 0.2, Math.random() + 0.2, Math.random() + 0.2];
 });
 
 window.addEventListener('mouseup', () => {
-    pointers[0].down = false;
-    pointers[1].down = false;
-});
-
-window.addEventListener('touchend', (e) => {
-    const touches = e.changedTouches;
-    for (let i = 0; i < touches.length; i++)
-        for (let j = 0; j < pointers.length; j++)
-            if (touches[i].identifier == pointers[j].id)
-                pointers[j].down = false;
+    pointers[3].down = false;
 });
