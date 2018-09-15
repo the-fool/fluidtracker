@@ -17,10 +17,18 @@ let config = {
 let pointers = [];
 let splatStack = [];
 
-const  { gl, ext } = getWebGLContext(canvas);
+const {
+    gl,
+    ext
+} = getWebGLContext(canvas);
 
-function getWebGLContext (canvas) {
-    const params = { alpha: false, depth: false, stencil: false, antialias: false };
+function getWebGLContext(canvas) {
+    const params = {
+        alpha: false,
+        depth: false,
+        stencil: false,
+        antialias: false
+    };
 
     let gl = canvas.getContext('webgl2', params);
     const isWebGL2 = !!gl;
@@ -44,14 +52,11 @@ function getWebGLContext (canvas) {
     let formatRG;
     let formatR;
 
-    if (isWebGL2)
-    {
+    if (isWebGL2) {
         formatRGBA = getSupportedFormat(gl, gl.RGBA16F, gl.RGBA, halfFloatTexType);
         formatRG = getSupportedFormat(gl, gl.RG16F, gl.RG, halfFloatTexType);
         formatR = getSupportedFormat(gl, gl.R16F, gl.RED, halfFloatTexType);
-    }
-    else
-    {
+    } else {
         formatRGBA = getSupportedFormat(gl, gl.RGBA, gl.RGBA, halfFloatTexType);
         formatRG = getSupportedFormat(gl, gl.RGBA, gl.RGBA, halfFloatTexType);
         formatR = getSupportedFormat(gl, gl.RGBA, gl.RGBA, halfFloatTexType);
@@ -69,12 +74,9 @@ function getWebGLContext (canvas) {
     };
 }
 
-function getSupportedFormat (gl, internalFormat, format, type)
-{
-    if (!supportRenderTextureFormat(gl, internalFormat, format, type))
-    {
-        switch (internalFormat)
-        {
+function getSupportedFormat(gl, internalFormat, format, type) {
+    if (!supportRenderTextureFormat(gl, internalFormat, format, type)) {
+        switch (internalFormat) {
             case gl.R16F:
                 return getSupportedFormat(gl, gl.RG16F, gl.RG, type);
             case gl.RG16F:
@@ -90,7 +92,7 @@ function getSupportedFormat (gl, internalFormat, format, type)
     }
 }
 
-function supportRenderTextureFormat (gl, internalFormat, format, type) {
+function supportRenderTextureFormat(gl, internalFormat, format, type) {
     let texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
@@ -109,7 +111,7 @@ function supportRenderTextureFormat (gl, internalFormat, format, type) {
     return true;
 }
 
-function pointerPrototype () {
+function pointerPrototype() {
     this.id = -1;
     this.x = 0;
     this.y = 0;
@@ -124,7 +126,7 @@ pointers.push(new pointerPrototype());
 pointers.push(new pointerPrototype());
 
 class GLProgram {
-    constructor (vertexShader, fragmentShader) {
+    constructor(vertexShader, fragmentShader) {
         this.uniforms = {};
         this.program = gl.createProgram();
 
@@ -142,12 +144,12 @@ class GLProgram {
         }
     }
 
-    bind () {
+    bind() {
         gl.useProgram(this.program);
     }
 }
 
-function compileShader (type, source) {
+function compileShader(type, source) {
     const shader = gl.createShader(type);
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
@@ -424,23 +426,23 @@ const vorticityProgram = new GLProgram(baseVertexShader, vorticityShader);
 const pressureProgram = new GLProgram(baseVertexShader, pressureShader);
 const gradienSubtractProgram = new GLProgram(baseVertexShader, gradientSubtractShader);
 
-function initFramebuffers () {
+function initFramebuffers() {
     textureWidth = gl.drawingBufferWidth >> config.TEXTURE_DOWNSAMPLE;
     textureHeight = gl.drawingBufferHeight >> config.TEXTURE_DOWNSAMPLE;
 
     const texType = ext.halfFloatTexType;
     const rgba = ext.formatRGBA;
-    const rg   = ext.formatRG;
-    const r    = ext.formatR;
+    const rg = ext.formatRG;
+    const r = ext.formatR;
 
-    density    = createDoubleFBO(2, textureWidth, textureHeight, rgba.internalFormat, rgba.format, texType, ext.supportLinearFiltering ? gl.LINEAR : gl.NEAREST);
-    velocity   = createDoubleFBO(0, textureWidth, textureHeight, rg.internalFormat, rg.format, texType, ext.supportLinearFiltering ? gl.LINEAR : gl.NEAREST);
-    divergence = createFBO      (4, textureWidth, textureHeight, r.internalFormat, r.format, texType, gl.NEAREST);
-    curl       = createFBO      (5, textureWidth, textureHeight, r.internalFormat, r.format, texType, gl.NEAREST);
-    pressure   = createDoubleFBO(6, textureWidth, textureHeight, r.internalFormat, r.format, texType, gl.NEAREST);
+    density = createDoubleFBO(2, textureWidth, textureHeight, rgba.internalFormat, rgba.format, texType, ext.supportLinearFiltering ? gl.LINEAR : gl.NEAREST);
+    velocity = createDoubleFBO(0, textureWidth, textureHeight, rg.internalFormat, rg.format, texType, ext.supportLinearFiltering ? gl.LINEAR : gl.NEAREST);
+    divergence = createFBO(4, textureWidth, textureHeight, r.internalFormat, r.format, texType, gl.NEAREST);
+    curl = createFBO(5, textureWidth, textureHeight, r.internalFormat, r.format, texType, gl.NEAREST);
+    pressure = createDoubleFBO(6, textureWidth, textureHeight, r.internalFormat, r.format, texType, gl.NEAREST);
 }
 
-function createFBO (texId, w, h, internalFormat, format, type, param) {
+function createFBO(texId, w, h, internalFormat, format, type, param) {
     gl.activeTexture(gl.TEXTURE0 + texId);
     let texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -459,18 +461,18 @@ function createFBO (texId, w, h, internalFormat, format, type, param) {
     return [texture, fbo, texId];
 }
 
-function createDoubleFBO (texId, w, h, internalFormat, format, type, param) {
-    let fbo1 = createFBO(texId    , w, h, internalFormat, format, type, param);
+function createDoubleFBO(texId, w, h, internalFormat, format, type, param) {
+    let fbo1 = createFBO(texId, w, h, internalFormat, format, type, param);
     let fbo2 = createFBO(texId + 1, w, h, internalFormat, format, type, param);
 
     return {
-        get read () {
+        get read() {
             return fbo1;
         },
-        get write () {
+        get write() {
             return fbo2;
         },
-        swap () {
+        swap() {
             let temp = fbo1;
             fbo1 = fbo2;
             fbo2 = temp;
@@ -496,7 +498,7 @@ let lastTime = Date.now();
 multipleSplats(parseInt(Math.random() * 20) + 5);
 update();
 
-function update () {
+function update() {
     resizeCanvas();
 
     const dt = Math.min((Date.now() - lastTime) / 1000, 0.016);
@@ -585,7 +587,7 @@ function update () {
     requestAnimationFrame(update);
 }
 
-function splat (x, y, dx, dy, color) {
+function splat(x, y, dx, dy, color) {
     splatProgram.bind();
     gl.uniform1i(splatProgram.uniforms.uTarget, velocity.read[2]);
     gl.uniform1f(splatProgram.uniforms.aspectRatio, canvas.width / canvas.height);
@@ -601,7 +603,7 @@ function splat (x, y, dx, dy, color) {
     density.swap();
 }
 
-function multipleSplats (amount) {
+function multipleSplats(amount) {
     for (let i = 0; i < amount; i++) {
         const color = [Math.random() * 10, Math.random() * 10, Math.random() * 10];
         const x = canvas.width * Math.random();
@@ -612,7 +614,7 @@ function multipleSplats (amount) {
     }
 }
 
-function resizeCanvas () {
+function resizeCanvas() {
     if (canvas.width != canvas.clientWidth || canvas.height != canvas.clientHeight) {
         canvas.width = canvas.clientWidth;
         canvas.height = canvas.clientHeight;
